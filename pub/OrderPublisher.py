@@ -4,6 +4,9 @@ import logging
 import optparse
 import os
 import re
+import urllib
+from urllib2 import HTTPError
+import urllib2
 from pip._vendor import requests
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import DesiredCapabilities
@@ -34,9 +37,9 @@ class OrderPublisher1():
         self.exceptionCount = 0
         self.MAX_EXCEPTION = 6
 
-        self.driver = webdriver.Remote("http://%s:%s/wd/hub" % ('127.0.0.1', '4444'), DesiredCapabilities.HTMLUNIT)
+        #        self.driver = webdriver.Remote("http://%s:%s/wd/hub" % ('127.0.0.1', '4444'), DesiredCapabilities.HTMLUNIT)
 
-        #        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome()
         self.wait = WebDriverWait(self.driver, 10)
 
     def login(self, userName, passWord):
@@ -111,17 +114,45 @@ class OrderPublisher1():
                 data[ipt.get_attribute('name')] = ipt.get_attribute('value')
             except Exception:
                 pass
-
-        post = requests.post('http://pub.bocaiwawa.com/receive.php', data=data, cookies=self.getCookies(self.driver))
-        post.encoding = 'gb2312'
-        response = post.content
-        #        self.clickInSafe("#btn_submit_form")
-
+                #response = self.requestSubmit(data, self.getCookies(self.driver))
+        response = self.post('http://pub.bocaiwawa.com/receive.php', data, self.getCookies(self.driver))
         if (not u"返回" in unicode(response, 'gb2312')):
             self.submitOrder(id)
             return
-
         logging.info("order sub success : " + id)
+
+    #        self.submit_old(id)
+
+    def post(self, url, data, cookies):
+        req = urllib2.Request(url)
+        data = urllib.urlencode(data)
+        #enable cookie
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+        cookieStr = ''
+        for key, value in cookies.items():
+            cookieStr += "%s=%s; " % (key, value)
+
+        opener.addheaders.append(('Cookie', cookieStr))
+        response = opener.open(req, data)
+        return response.read()
+
+    def requestSubmit(self, data, cookies):
+        try:
+            post = requests.post('http://pub.bocaiwawa.com/receive.php', data=data, cookies=cookies)
+        except Exception, e:
+            print e
+            return self.requestSubmit(data, cookies)
+        post.encoding = 'gb2312'
+        return post.content
+
+    def submit_old(self, id):
+        self.clickInSafe("#btn_submit_form")
+        try:
+            self.clickInSafe('a[href="test_file.php"]')
+            logging.info("order sub success : " + id)
+        except Exception, e:
+            self.submitOrder(id)
 
     def getCookies(self, driver):
         cookiesResult = {}
@@ -131,6 +162,18 @@ class OrderPublisher1():
             cookiesResult[cookie['name']] = cookie['value']
 
         return cookiesResult
+
+    def getHeaders(self):
+        return {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+            'Cookie': 'pgv_pvid=8168912156; bc_agent=1300000297; PHPSESSID=fda4def2ddc0bdcd2cc6a795d4b588ab',
+            'Host': 'pub.bocaiwawa.com',
+            'Referer': 'http://pub.bocaiwawa.com/test_list.php?id=62802',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0'
+        }
 
     def clickInSafe(self, cssSelector):
         self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, cssSelector)))
@@ -153,7 +196,10 @@ class OrderPublisher1():
                         logging.info("order sub failed : " + id)
                         continue
         finally:
-            self.driver.quit()
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

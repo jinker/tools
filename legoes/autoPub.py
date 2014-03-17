@@ -1,6 +1,5 @@
 import optparse
 import re
-#import pub
 from pub import *
 
 __author__ = 'jinker'

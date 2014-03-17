@@ -1,4 +1,7 @@
 #coding:utf-8
+import urllib
+import urllib2
+
 __author__ = 'jinker'
 
 import json
@@ -94,6 +97,20 @@ class Pub():
             logging.info('deploy success : ' + id)
         else:
             logging.info('deploy fail : ' + id)
+
+    def post(self, url, data, cookies):
+        req = urllib2.Request(url)
+        data = urllib.urlencode(data)
+        #enable cookie
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+        cookieStr = ''
+        for key, value in cookies.items():
+            cookieStr += "%s=%s; " % (key, value)
+
+        opener.addheaders.append(('Cookie', cookieStr))
+        response = opener.open(req, data)
+        return response.read()
 
     def getCookies(self, driver):
         cookiesResult = {}
