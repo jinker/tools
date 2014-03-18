@@ -27,6 +27,7 @@ def toAmd(pathJs):
         textOri = s.GetSource()
         name_map = s.getNameMap()
         names = s.getNames()
+        names = sorted(names, reverse=True)
         source_lines = textOri.splitlines()
         #转换
         for line in source_lines:
