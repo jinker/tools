@@ -27,7 +27,7 @@ _PROVIDE_REGEX = re.compile(_BASE_REGEX_STRING % 'provide')
 _REQUIRES_REGEX = re.compile(_BASE_REGEX_STRING % 'require')
 _PROVIDE_REGEX_LINE = re.compile('\n\s*goog\.provide\(\s*[\'"].+[\'"]\s*\);?')
 _REQUIRES_REGEX_LINE = re.compile('\n\s*goog\.require\(\s*[\'"].+[\'"]\s*\);?')
-_STRING_REGEX_LINE = re.compile('([\'].+?[\']|["].+?["])')
+_STRING_REGEX_LINE = re.compile('(\'.*?(?<!\\\)\'|".*?(?<!\\\)")')
 
 # This line identifies base.js and should match the line in that file.
 _GOOG_BASE_LINE = (
@@ -119,4 +119,6 @@ def GetFileContents(path):
 
 
 if __name__ == "__main__":
-    print _STRING_REGEX_LINE.sub("", '"test"sadas"sdf"')
+    print re.compile('\'.*?(?<!\\\)\'').sub('', open('E:/workspace/tools/closure/bin/build/test.js', 'r').read())
+#    print re.compile('\'.+?(?<!(\\{1}))\'').sub("",
+#        "output += '<li class=\'game ' + ((bettingGameData8._expired) ? 'expired' : '') + ' ' + ((bettingGameData8._selectedDs) ? 'on' : '') + '\' data-game-id=\'' + bettingGameData8._id + '\'><span class=\"no\">' + bettingGameData8._gameNo + '</span><span class=\"home-team\">' + bettingGameData8._homeTeam.name + '</span><span class=\"handicap\">' + ((bettingGameData8._handicap != null && bettingGameData8._handicap != 0) ? '(' + ((bettingGameData8._handicap > 0) ? '<span class=\'red bold\'>+' + bettingGameData8._handicap + '</span>' : '<span class=\'green bold\'>' + bettingGameData8._handicap + '</span>') + ')' : '') + '</span><span class=\"game-time\">' + soy.$$escapeHtml(cp.date.util.format(bettingGameData8._gameTime,'%h:%m',true)) + '</span><span class=\"visiting-team\">' + bettingGameData8._visitingTeam.name + '</span></li>';")
