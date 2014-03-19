@@ -24,7 +24,7 @@ def toAmd(pathJs):
     s = source.Source(source.GetFileContents(pathJs))
     if s.provides:
         textRes = ""
-        textOri = s.GetSource()
+        textOri = source.Source._StripComments(s.GetSource())
         name_map = s.getNameMap()
         names = s.getNames()
         names = sorted(names, reverse=True)
@@ -45,7 +45,10 @@ def toAmd(pathJs):
                 textRes += '\nvar ' + s.getCamelName(provide) + ' = {};'
             elif matchRequire:
                 require = matchRequire.group(1)
-                textRes += '\nvar ' + s.getCamelName(require) + ' = require("' + require + '");'
+                camel_name = s.getCamelName(require)
+                if not camel_name:
+                    print pathJs
+                textRes += '\nvar ' + camel_name + ' = require("' + require + '");'
             else:
                 if not source.isComment(line):
                     for name in names:

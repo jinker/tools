@@ -95,6 +95,7 @@ class Source(object):
         except Exception:
             pass
 
+        print str
         return None
 
     def getNames(self):
