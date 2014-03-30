@@ -77,7 +77,8 @@ def _GetOptionsParser():
         dest='output_mode',
         type='choice',
         action='store',
-        choices=['list', 'script', 'compiled', 'calcdepsIndependent', 'calcAndOrganizeDepsIndependent', 'genModuleJsEntryPoint'],
+        choices=['list', 'script', 'compiled', 'calcdepsIndependent', 'calcAndOrganizeDepsIndependent',
+                 'genModuleJsEntryPoint'],
         default='list',
         help='The type of output to generate from this script. '
              'Options are "list" for a list of filenames, "script" '
@@ -283,17 +284,17 @@ def writeDepsFile(deps, input_namespaces, outputDir, rootWithPrefix):
          for js_source in deps])
 
 
-def calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix):
+def calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix, sources):
     #exclude closure module
     depsExcludeClosure = []
     providesExcludeClosure = set()
-    for dep in deps:
-        if not "closure" in dep.GetPath():
-            depsExcludeClosure.append(dep)
-            providesExcludeClosure.update(dep.provides)
+    for source in sources:
+        if not "closure" in source.GetPath():
+            depsExcludeClosure.append(source)
+            providesExcludeClosure.update(source.provides)
     providesExcludeClosure = sorted(providesExcludeClosure, reverse=True)
-    for dep in depsExcludeClosure:
-        dep.writeRequires(providesExcludeClosure)
+    for source in depsExcludeClosure:
+        source.writeRequires(providesExcludeClosure)
     writeDepsFile(deps, input_namespaces, output_dir, root_with_prefix)
 
 
@@ -307,14 +308,16 @@ def genModuleJsEntryPoint(deps, input_namespaces, modulejs, output_dir, root_wit
 
     template = template.replace("/*host*/", host)
     rootWithPrefix, prefix = _GetPair(root_with_prefix)
-    template = template.replace("/*urlMap*/", ',\n'.join([_GetModuleJsLine(js_source.GetPath().replace(rootWithPrefix, prefix).replace(os.sep, posixpath.sep), js_source)
-                                                          for js_source in deps if not 'closure' in js_source.GetPath()]))
+    template = template.replace("/*urlMap*/", ',\n'.join(
+        [_GetModuleJsLine(js_source.GetPath().replace(rootWithPrefix, prefix).replace(os.sep, posixpath.sep), js_source)
+         for js_source in deps if not 'closure' in js_source.GetPath()]))
     template = template.replace("/*moduleJs*/", open(modulejs, "r").read())
     template = template.replace("/*entryPointModule*/", entryModule)
     out.write(template)
 
     logging.info('The entrypoint url is:\nhttp://888.gtimg.com/static/v1.0/i/js/entrypoint/' + entrypoint_js)
     logging.info('Success.')
+
 
 def main():
     logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
@@ -377,7 +380,7 @@ def main():
     elif output_mode == 'calcdepsIndependent':
         writeDepsFile(deps, input_namespaces, output_dir, root_with_prefix)
     elif output_mode == 'calcAndOrganizeDepsIndependent':
-        calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix)
+        calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix, sources)
     elif output_mode == 'genModuleJsEntryPoint':
         modulejs = options.modulejs
         genModuleJsEntryPoint(deps, input_namespaces, modulejs, output_dir, root_with_prefix, options.host)
