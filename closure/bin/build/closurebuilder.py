@@ -290,8 +290,10 @@ def calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with
     providesExcludeClosure = set()
     for source in sources:
         if not "closure" in source.GetPath():
-            depsExcludeClosure.append(source)
             providesExcludeClosure.update(source.provides)
+    for source in deps:
+        if not "closure" in source.GetPath():
+            depsExcludeClosure.append(source)
     providesExcludeClosure = sorted(providesExcludeClosure, reverse=True)
     for source in depsExcludeClosure:
         source.writeRequires(providesExcludeClosure)
