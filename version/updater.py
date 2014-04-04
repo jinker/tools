@@ -1,6 +1,7 @@
+from util import svn
+
 __author__ = 'jinker'
 
-import fileinput
 import re
 import sys
 import logging
@@ -9,7 +10,6 @@ import treescan
 import datetime
 import time
 import os
-
 
 class FileConfig(object):
     _SUFFIX_MAP = {}
@@ -49,6 +49,8 @@ SOFT_LINKS_REL_DIR_MAP = {
     "static/cftcaipiao/v1.0": "gtimg",
     "static/v1.0": "/v1.0"
 }
+
+logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 def _GetOptionsParser():
     """Get the options parser."""
@@ -102,6 +104,7 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
                 result = 1
 
     if result:
+        svn.lock(contentFilePath)
         fileObjW = open(contentFilePath, "w")
         fileObjW.write(content)
         fileObjW.close()
@@ -111,18 +114,11 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
     return result
 
 
-def main():
-    logging.basicConfig(format='%(message)s', level=logging.INFO)
-    options, args = _GetOptionsParser().parse_args()
-
+def update(filePath, roots):
     paths = set()
     updatedFilePaths = set()
 
-    basePath = options.basePath
-    roots = options.roots
-    filePath = os.path.relpath(options.filePath, basePath).replace("\\", "/")
-    fileType = os.path.splitext(options.filePath)[1]
-
+    fileType = os.path.splitext(filePath)[1]
     fileConfig = FileConfig.getConfig(fileType)
 
     if not fileConfig or not fileConfig.regStrSet:
@@ -159,6 +155,15 @@ def main():
             logging.info("\t" + str(index) + ".\t" + path)
     else:
         logging.info("No file updated.")
+
+
+def main():
+    options, args = _GetOptionsParser().parse_args()
+    basePath = options.basePath
+    roots = options.roots
+    filePath = os.path.relpath(options.filePath, basePath).replace("\\", "/")
+
+    update(filePath, roots)
 
     sys.exit(0)
 
