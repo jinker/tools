@@ -24,7 +24,7 @@ def toAmd(pathJs):
     s = source.Source(source.GetFileContents(pathJs))
     if s.provides:
         textRes = ""
-        textOri = source.Source._StripComments(s.GetSource())
+        textOri = textOri = s.GetSource()
         name_map = s.getNameMap()
         names = s.getNames()
         names = sorted(names, reverse=True)
