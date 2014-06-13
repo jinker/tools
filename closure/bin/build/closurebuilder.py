@@ -28,6 +28,7 @@ all JS files below a directory.
 usage: %prog [options] [file1.js file2.js ...]
 """
 import re
+from closure.bin.build import depswriter
 import util.svn
 import version.updater
 
@@ -81,7 +82,7 @@ def _GetOptionsParser():
         type='choice',
         action='store',
         choices=['list', 'script', 'compiled', 'compiledSimple', 'calcdepsIndependent', 'calcAndOrganizeDepsIndependent',
-                 'genModuleJsEntryPoint'],
+                 'genModuleJsEntryPoint', 'compiledByModule'],
         default='list',
         help='The type of output to generate from this script. '
              'Options are "list" for a list of filenames, "script" '
@@ -394,6 +395,14 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
         sys.exit(1)
 
 
+def isEntryPointModule(namespace, source_map_noGoog):
+    for path1 in source_map_noGoog.keys():
+        for require in source_map_noGoog[path1].requires:
+            if (require == namespace):
+                return False
+    return True
+
+
 def main():
     logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
         level=logging.INFO)
@@ -464,6 +473,40 @@ def main():
             sys.exit(1)
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots)
+    elif output_mode == 'compiledByModule':
+        source_map_noGoog = {}#非closure库模块
+        source_map = depswriter._GetRelativePathToSourceDict(roots[0])
+        paths = sorted(source_map.keys())
+
+        for path in paths:
+            js_source = source_map[path]
+            if js_source.provides:
+                namespace = js_source.provides.copy().pop()
+                if (not (re.compile("^goog").match(namespace) or re.compile("^cp\.tpl").match(namespace))):
+                    source_map_noGoog[path] = js_source
+
+        source_map_entryPoint = {}#入口模块
+        for path in source_map_noGoog.keys():
+            js_source = source_map_noGoog[path]
+            if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
+                source_map_entryPoint[path] = js_source
+
+        targetNameSpace = input_namespaces.copy().pop()
+        source_map_by_module = {}
+        for path in source_map_entryPoint.keys():
+            js_source = source_map_entryPoint[path]
+            namespace = js_source.provides.copy().pop()
+            for dep in tree.GetDependencies(namespace):
+                if targetNameSpace in dep.provides:
+                    source_map_by_module[path] = js_source
+
+        for path in source_map_by_module.keys():
+            source_entry = source_map_by_module[path]
+            minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(source_entry.provides.copy().pop()), [roots[0] + "/" + path], compiler_flags)
+
+            if minJs:
+                minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
+                version.updater.update(minJs, roots)
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
