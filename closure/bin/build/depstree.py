@@ -19,6 +19,7 @@ Offers a queryable tree of dependencies of a given set of sources.  The tree
 will also do logical validation to prevent duplicate provides and circular
 dependencies.
 """
+import re
 
 __author__ = 'nnaze@google.com (Nathan Naze)'
 
@@ -39,6 +40,7 @@ class DepsTree(object):
 
         self._sources = sources
         self._provides_map = dict()
+        self._leaves = []
 
         # Ensure nothing was provided twice.
         for source in sources:
@@ -55,6 +57,54 @@ class DepsTree(object):
                 if require not in self._provides_map:
                     print('Warning : "' + require + '" never provided')
                     #          raise NamespaceNotFoundError(require, source)
+
+    def isLeaf(self, source, requires):
+        provides = source.provides
+        if provides:
+            for provide in provides:
+                if ((re.compile("^goog").match(provide) or re.compile("^cp\.tpl").match(provide))):
+                    return False
+                if provide in requires:
+                    return False
+            return True
+        else:
+            return False
+
+    def GetLeaves(self):
+        sources = self._sources
+        if not self._leaves:
+            requires = set()
+            for source in sources:
+                requires = requires.union(source.requires)
+
+            for source in sources:
+                if self.isLeaf(source, requires):
+                    self._leaves.append(source)
+
+        return self._leaves
+
+    def inDependent(self, namespace, targetNamespace):
+        for dep in self.GetDependencies(targetNamespace):
+            if namespace in dep.requires:
+                return True
+        return False
+
+    def GetLeafSourcesByNameSpace(self, namespace):
+        """
+        Args:
+          namespace: namespace of the been dependent module
+
+        Returns:
+          A set of source that are leaves
+        """
+        leaves = self.GetLeaves()
+        sources_by_module = set()
+        for source in leaves:
+            targetNamespace = source.provides.copy().pop()
+            if self.inDependent(namespace, targetNamespace):
+                sources_by_module.add(source)
+
+        return sources_by_module
 
     def GetDependencies(self, required_namespaces):
         """Get source dependencies, in order, for the given namespaces.

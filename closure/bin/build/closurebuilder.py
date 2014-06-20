@@ -343,7 +343,7 @@ def compile(compiler_jar_path, deps, inputs, compiler_flags):
         logging.error('--compiler_jar flag must be specified if --output is '
                       '"compiled"')
         return None
-    compiled_source = jscompiler.CompileInSplitModule(
+    compiled_source = jscompiler.Compile(
         compiler_jar_path,
         deps,
         compiler_flags)
@@ -395,12 +395,29 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
         sys.exit(1)
 
 
-def isEntryPointModule(namespace, source_map_noGoog):
-    for path1 in source_map_noGoog.keys():
-        for require in source_map_noGoog[path1].requires:
-            if (require == namespace):
+def isEntryPointModule(namespace, source_map):
+    for path in source_map.keys():
+        for require in source_map[path].requires:
+            if require == namespace:
                 return False
     return True
+
+
+def getEntryPointSourceMap(source_map):
+    paths = sorted(source_map.keys())
+    source_map_noGoog = {}#非closure库模块
+    for path in paths:
+        js_source = source_map[path]
+        if js_source.provides:
+            namespace = js_source.provides.copy().pop()
+            if (not (re.compile("^goog").match(namespace) or re.compile("^cp\.tpl").match(namespace))):
+                source_map_noGoog[path] = js_source
+    source_map_entryPoint = {}#入口模块
+    for path in source_map_noGoog.keys():
+        js_source = source_map_noGoog[path]
+        if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
+            source_map_entryPoint[path] = js_source
+    return source_map_entryPoint
 
 
 def main():
@@ -474,35 +491,10 @@ def main():
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots)
     elif output_mode == 'compiledByModule':
-        source_map_noGoog = {}#非closure库模块
-        source_map = depswriter._GetRelativePathToSourceDict(roots[0])
-        paths = sorted(source_map.keys())
+        sources_by_module = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
-        for path in paths:
-            js_source = source_map[path]
-            if js_source.provides:
-                namespace = js_source.provides.copy().pop()
-                if (not (re.compile("^goog").match(namespace) or re.compile("^cp\.tpl").match(namespace))):
-                    source_map_noGoog[path] = js_source
-
-        source_map_entryPoint = {}#入口模块
-        for path in source_map_noGoog.keys():
-            js_source = source_map_noGoog[path]
-            if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
-                source_map_entryPoint[path] = js_source
-
-        targetNameSpace = input_namespaces.copy().pop()
-        source_map_by_module = {}
-        for path in source_map_entryPoint.keys():
-            js_source = source_map_entryPoint[path]
-            namespace = js_source.provides.copy().pop()
-            for dep in tree.GetDependencies(namespace):
-                if targetNameSpace in dep.provides:
-                    source_map_by_module[path] = js_source
-
-        for path in source_map_by_module.keys():
-            source_entry = source_map_by_module[path]
-            minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(source_entry.provides.copy().pop()), [roots[0] + "/" + path], compiler_flags)
+        for source_entry in sources_by_module:
+            minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(source_entry.provides.copy().pop()), [source_entry.GetPath()], compiler_flags)
 
             if minJs:
                 minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
