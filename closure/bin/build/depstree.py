@@ -83,11 +83,16 @@ class DepsTree(object):
 
         return self._leaves
 
-    def inDependent(self, namespace, targetNamespace):
-        for dep in self.GetDependencies(targetNamespace):
-            if namespace in dep.requires:
+    def inDependent(self, namespace, targetNamespace, direct=False):
+        if direct:
+            if namespace in self._provides_map[targetNamespace].requires:
                 return True
-        return False
+            return False
+        else:
+            for dep in self.GetDependencies(targetNamespace):
+                if namespace in dep.requires:
+                    return True
+            return False
 
     def GetLeafSourcesByNameSpace(self, namespace):
         """
@@ -103,6 +108,24 @@ class DepsTree(object):
             targetNamespace = source.provides.copy().pop()
             if self.inDependent(namespace, targetNamespace):
                 sources_by_module.add(source)
+
+        return sources_by_module
+
+    def GetDirectSourcesByNameSpace(self, namespace):
+        """
+        Args:
+          namespace: namespace of the been dependent module
+
+        Returns:
+          A set of source that direct dependent
+        """
+        sources_by_module = set()
+        for source in self._sources:
+            provides = source.provides
+            if provides:
+                targetNamespace = provides.copy().pop()
+                if self.inDependent(namespace, targetNamespace, True):
+                    sources_by_module.add(source)
 
         return sources_by_module
 

@@ -81,8 +81,8 @@ def _GetOptionsParser():
         dest='output_mode',
         type='choice',
         action='store',
-        choices=['list', 'script', 'compiled', 'compiledSimple', 'calcdepsIndependent', 'calcAndOrganizeDepsIndependent',
-                 'genModuleJsEntryPoint', 'compiledByModule'],
+        choices=['list', 'script', 'compiled', 'compiledSimple', 'calcdepsIndependent', 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
+                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule'],
         default='list',
         help='The type of output to generate from this script. '
              'Options are "list" for a list of filenames, "script" '
@@ -473,6 +473,9 @@ def main():
         out.writelines([js_source.GetPath() + '\n' for js_source in deps])
     elif output_mode == 'calcdepsIndependent':
         writeDepsFile(deps, input_namespaces, output_dir, root_with_prefix)
+    elif output_mode == 'calcdepsIndependentDetail':
+        for dep in deps:
+            print dep.provides.copy().pop(), '\t', dep.GetPath(), '\t', len(dep.GetSource())
     elif output_mode == 'calcAndOrganizeDepsIndependent':
         calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix, sources)
     elif output_mode == 'genModuleJsEntryPoint':
@@ -491,14 +494,24 @@ def main():
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots)
     elif output_mode == 'compiledByModule':
-        sources_by_module = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
+        sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
-        for source_entry in sources_by_module:
-            minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(source_entry.provides.copy().pop()), [source_entry.GetPath()], compiler_flags)
+        for dep in sources:
+            minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(dep.provides.copy().pop()), [dep.GetPath()], compiler_flags)
 
             if minJs:
                 minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
                 version.updater.update(minJs, roots)
+    elif output_mode == 'findEntriesByModule':
+        sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
+
+        for dep in sources:
+            print dep.provides.copy().pop(), '\t', dep.GetPath()
+    elif output_mode == 'findModulesByModule':
+        sources = tree.GetDirectSourcesByNameSpace(input_namespaces.copy().pop())
+
+        for dep in sources:
+            print dep.provides.copy().pop(), '\t', dep.GetPath()
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
