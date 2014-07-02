@@ -29,6 +29,7 @@ usage: %prog [options] [file1.js file2.js ...]
 """
 import re
 from closure.bin.build import depswriter
+import eos
 import util.svn
 import version.updater
 
@@ -129,6 +130,12 @@ def _GetOptionsParser():
         dest='host',
         action='store',
         help=('host of modulejs'))
+
+    parser.add_option('--eos',
+        dest='eos',
+        default=False,
+        action='store',
+        help=('if execute eos'))
 
     return parser
 
@@ -357,6 +364,7 @@ def compile(compiler_jar_path, deps, inputs, compiler_flags):
         util.svn.lock(min_js_)
         out = open(min_js_, "w")
         out.write(compiled_source)
+        logging.info('min js : ' + min_js_)
         return min_js_
 
 
@@ -391,7 +399,7 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
         out = open(minJs, "w")
         out.write(content)
 
-        minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
+        minJs = getRelPath(minJs, roots[0])
         version.updater.update(minJs, roots)
     else:
         sys.exit(1)
@@ -420,6 +428,10 @@ def getEntryPointSourceMap(source_map):
         if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
             source_map_entryPoint[path] = js_source
     return source_map_entryPoint
+
+
+def getRelPath(minJs, root):
+    return "/" + os.path.relpath(minJs, root).replace("\\", "/")
 
 
 def main():
@@ -489,23 +501,39 @@ def main():
         minJs = compile(compiler_jar_path, deps, inputs, compiler_flags)
 
         if minJs:
-            minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
-            version.updater.update(minJs, roots)
+            minJs = getRelPath(minJs, roots[0])
+            htmlPaths = version.updater.update(minJs, roots)
+
+            relPaths = [minJs]
+            for path in htmlPaths:
+                relPaths.append(getRelPath(path, roots[0]))
+
+            if options.eos:
+                addEosMission(relPaths, minJs)
         else:
             sys.exit(1)
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots)
     elif output_mode == 'compiledByModule':
-        sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
+        namespaceTarget = input_namespaces.copy().pop()
+        sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)
 
+        relPaths = []
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
                 minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags)
 
                 if minJs:
-                    minJs = os.path.relpath(minJs, roots[0]).replace("\\", "/")
-                    version.updater.update(minJs, roots)
+                    minJs = getRelPath(minJs, roots[0])
+                    htmlPaths = version.updater.update(minJs, roots)
+
+                    relPaths.append(minJs)
+                    for path in htmlPaths:
+                        relPaths.append(getRelPath(path, roots[0]))
+
+        if options.eos:
+            addEosMission(relPaths, namespaceTarget)
     elif output_mode == 'findEntriesByModule':
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
@@ -524,3 +552,7 @@ def main():
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
+
+
+def addEosMission(filePaths, subject):
+    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject, executors=['jinkerjiang'], middlePath='/html')

@@ -46,8 +46,8 @@ FILE_CONFIGS = [
 
 #
 SOFT_LINKS_REL_DIR_MAP = {
-    "static/cftcaipiao/v1.0": "gtimg",
-    "static/v1.0": "/v1.0"
+    "/static/cftcaipiao/v1.0": "/gtimg",
+    "/static/v1.0": "/v1.0"
 }
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -156,12 +156,18 @@ def update(filePath, roots):
     else:
         logging.info("No file updated.")
 
+    return updatedFilePaths
+
+
+def getRelPath(minJs, root):
+    return "/" + os.path.relpath(minJs, root).replace("\\", "/")
+
 
 def main():
     options, args = _GetOptionsParser().parse_args()
     basePath = options.basePath
     roots = options.roots
-    filePath = os.path.relpath(options.filePath, basePath).replace("\\", "/")
+    filePath = getRelPath(options.filePath, basePath)
 
     update(filePath, roots)
 
