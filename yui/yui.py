@@ -2,12 +2,16 @@ import logging
 import os
 import re
 import subprocess
+import sys
 from util import svn
 import distutils.version
 
 __author__ = 'jinkerjiang'
 
 _VERSION_REGEX = re.compile('"([0-9][.0-9]*)')
+
+logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
+    level=logging.INFO)
 
 
 def _GetJavaVersion():

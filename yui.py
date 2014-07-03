@@ -1,4 +1,6 @@
 import optparse
+from version import updater
+import version
 from yui import yui
 
 def _GetOptionsParser():
@@ -14,13 +16,22 @@ def _GetOptionsParser():
         dest='output_file',
         action='store',
         help=('output file path'))
+    parser.add_option('-i',
+        '--root',
+        dest='root',
+        action='store',
+        help='root dir')
 
     return parser
 
 
 def main():
     options, args = _GetOptionsParser().parse_args()
-    yui.Compile(options.input, options.output_file)
+    output = options.output_file
+    input = options.input
+    yui_compile = yui.Compile(input, output)
+#    if yui_compile:
+#        version.updater.update(output, options.root)
 
 if __name__ == "__main__":
     main()

@@ -62,7 +62,8 @@ def Compile(compiler_jar_path, source_paths, flags=None):
     if flags:
         args += flags
 
-    logging.info('Compiling with the following command: %s', ' '.join(args))
+    logging.info('JavaScript compiling...')
+    #logging.info('Compiling with the following command: %s', ' '.join(args))
 
     proc = subprocess.Popen(args, stdout=subprocess.PIPE)
     stdoutdata, unused_stderrdata = proc.communicate()

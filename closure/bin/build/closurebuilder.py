@@ -382,7 +382,7 @@ def getSources(options_roots, args):
     return sources
 
 
-def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
+def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos):
     minJs = compile(compiler_jar_path, deps, inputs, compiler_flags)
     if minJs:
         out = open(minJs, "r")
@@ -400,9 +400,13 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
         out.write(content)
 
         minJs = getRelPath(minJs, roots[0])
-        version.updater.update(minJs, roots)
-    else:
-        sys.exit(1)
+        htmlPaths = version.updater.update(minJs, roots)
+
+        if exeEos:
+            relPaths = [minJs]
+            for path in htmlPaths:
+                relPaths.append(getRelPath(path, roots[0]))
+            addEosMission(relPaths, minJs)
 
 
 def isEntryPointModule(namespace, source_map):
@@ -513,7 +517,7 @@ def main():
         else:
             sys.exit(1)
     elif output_mode == 'compiledSimple':
-        compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots)
+        compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
     elif output_mode == 'compiledByModule':
         namespaceTarget = input_namespaces.copy().pop()
         sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)

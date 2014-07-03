@@ -3,6 +3,7 @@ import httplib
 import logging
 import optparse
 import urllib
+from util import inputUtil
 
 __author__ = 'jinkerjiang'
 
@@ -91,7 +92,16 @@ if __name__ == "__main__":
         fileRelativePaths = options.fileRelativePaths
         subject = options.subject
     elif options_type == 'pathFromInput':
-        fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
+        logging.info("Please input file relative path(multiple split by semicolon): \n")
+        fileRelPathsRaw = inputUtil.raw_input_multi_line()
+
+        fileRelativePaths = []
+        for fileRelPath in fileRelPathsRaw:
+            fileRelativePaths.append(fileRelPath.replace("\\", "/"))
+
+
+        #fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
+
         subject = raw_input("Please input subject: \n").replace("\\", "/")
 
     addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=['jinkerjiang'], middlePath='/html')
