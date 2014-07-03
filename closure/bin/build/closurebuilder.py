@@ -387,13 +387,13 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots):
     if minJs:
         out = open(minJs, "r")
         content = out.read()
-        content = re.sub(r'var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '', content)
+        content = re.sub('var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '', content)
         #将"goog.require(...);"移除
-        content = re.sub(r'goog\.require\([^)]*\);', '', content)
+        content = re.sub('goog\.require\([^)]*\);', '', content)
         #将"goog.provide(...);"替换成"CP.util.namespace(...);"
-        content = re.sub(r'goog\.provide', 'CP.util.namespace', content)
+        content = re.sub('goog\.provide', 'CP.util.namespace', content)
         #避免CP命名覆盖问题
-        content = re.sub(r'var CP=\{(\w+):(\{[^}]*\})\}', 'var CP=CP||{};CP.\1={}', content)
+        content = re.sub('var CP=\{(\w+):(\{[^}]*\})\}', 'var CP=CP||{};CP.\1={}', content)
 
         util.svn.lock(minJs)
         out = open(minJs, "w")
