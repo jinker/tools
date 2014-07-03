@@ -14,5 +14,3 @@ def lock(path):
 
 def isUnderVersionAndLocked(path):
     pass
-
-lock('E:/workspace/bocai/static/v1.0/i/js/jczq/confirm/cp_jczq_confirm_compound.js')
