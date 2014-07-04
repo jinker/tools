@@ -1,7 +1,10 @@
 #coding:utf-8
 import httplib
+import json
 import logging
 import optparse
+import os
+import re
 import urllib
 from util import inputUtil
 
@@ -104,4 +107,7 @@ if __name__ == "__main__":
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
 
-    addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=['jinkerjiang'], middlePath='/html')
+    dir = re.sub('\\\\', '/', os.path.normpath(os.path.abspath(__file__)))
+    dir = re.sub(r'/[^/]*$', '', dir)
+    settings = json.loads(open(dir + '/setting.json').read())
+    addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=[settings['userName']], middlePath='/html')
