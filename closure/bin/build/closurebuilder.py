@@ -46,7 +46,6 @@ import jscompiler
 import source
 import treescan
 
-
 def _GetOptionsParser():
     """Get the options parser."""
 
@@ -82,7 +81,7 @@ def _GetOptionsParser():
         dest='output_mode',
         type='choice',
         action='store',
-        choices=['list', 'script', 'compiled', 'compiledSimple', 'calcdepsIndependent', 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
+        choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule', 'calcdepsIndependent', 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
                  'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule', 'calcdepsIndependentByModule'],
         default='list',
         help='The type of output to generate from this script. '
@@ -279,7 +278,6 @@ class _PathSource(source.Source):
 
             sourceNew = source._REQUIRES_REGEX_LINE.sub('', self._source)
 
-            #((\n?\s*goog\.provide\(\s*[\'"].*[\'"]\s*\);?\n*)+)
             re_provide = re.compile('((\n?\s*goog\.provide\(\s*[\'"].*[\'"]\s*\);?\n*)+)')
             if requiresDirect:
                 sourceNew = re_provide.sub(r'\1\n' + requireStatements, sourceNew)
@@ -344,7 +342,7 @@ def genModuleJsEntryPoint(deps, input_namespaces, modulejs, output_dir, root_wit
     logging.info('Success.')
 
 
-def compile(compiler_jar_path, deps, inputs, compiler_flags):
+def compile(compiler_jar_path, deps, inputs, compiler_flags, root):
     input = inputs.pop()
     # Make sure a .jar is specified.
     if not compiler_jar_path:
@@ -360,12 +358,20 @@ def compile(compiler_jar_path, deps, inputs, compiler_flags):
         return None
     else:
         logging.info('JavaScript compilation succeeded.')
-        min_js_ = os.path.dirname(input) + "/" + os.path.splitext(os.path.basename(input))[0] + ".c.min.js"
-        util.svn.lock(min_js_)
-        out = open(min_js_, "w")
+        fileNameNoSuffix = os.path.splitext(os.path.basename(input))[0]
+        min_js_ = os.path.dirname(input) + "/" + fileNameNoSuffix + ".c.min.js"
+
+        timestamp, buildPath = version.updater.getTimeStampAndRelativePath()
+        dir = root.replace("\\", "/") + version.updater.BASE_BUILD_DIR + buildPath + "/"
+        min_js_new = dir + fileNameNoSuffix + "." + timestamp + ".c.min.js"
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+        util.svn.lock(min_js_new)
+        out = open(min_js_new, "w")
         out.write(compiled_source)
-        logging.info('min js : ' + min_js_)
-        return min_js_
+        logging.info('min js : ' + min_js_new)
+        return min_js_new, min_js_
 
 
 def getSources(options_roots, args):
@@ -383,7 +389,7 @@ def getSources(options_roots, args):
 
 
 def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos):
-    minJs = compile(compiler_jar_path, deps, inputs, compiler_flags)
+    minJs, minJsExpired = compile(compiler_jar_path, deps, inputs, compiler_flags, roots[0])
     if minJs:
         out = open(minJs, "r")
         content = out.read()
@@ -400,13 +406,20 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
         out.write(content)
 
         minJs = getRelPath(minJs, roots[0])
-        htmlPaths = version.updater.update(minJs, roots)
+        minJsExpired = getRelPath(minJsExpired, roots[0])
+        htmlPaths = version.updater.update(minJs, roots, minJsExpired)
+        htmlRealPaths = []
+
+        relPaths = [minJs]
+        for path in htmlPaths:
+            rel_path = getRelPath(path, roots[0])
+            htmlRealPaths.append(rel_path)
+            relPaths.append(rel_path)
 
         if exeEos:
-            relPaths = [minJs]
-            for path in htmlPaths:
-                relPaths.append(getRelPath(path, roots[0]))
             addEosMission(relPaths, minJs)
+
+    return (minJs, htmlRealPaths)
 
 
 def isEntryPointModule(namespace, source_map):
@@ -502,11 +515,12 @@ def main():
     elif output_mode == 'script':
         out.writelines([js_source.GetSource() for js_source in deps])
     elif output_mode == 'compiled':
-        minJs = compile(compiler_jar_path, deps, inputs, compiler_flags)
+        minJs, minJsExpired = compile(compiler_jar_path, deps, inputs, compiler_flags, roots[0])
 
         if minJs:
             minJs = getRelPath(minJs, roots[0])
-            htmlPaths = version.updater.update(minJs, roots)
+            minJsExpired = getRelPath(minJsExpired, roots[0])
+            htmlPaths = version.updater.update(minJs, roots, minJsExpired)
 
             relPaths = [minJs]
             for path in htmlPaths:
@@ -516,8 +530,6 @@ def main():
                 addEosMission(relPaths, minJs)
         else:
             sys.exit(1)
-    elif output_mode == 'compiledSimple':
-        compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
     elif output_mode == 'compiledByModule':
         namespaceTarget = input_namespaces.copy().pop()
         sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)
@@ -526,11 +538,12 @@ def main():
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
-                minJs = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags)
+                minJs, minJsExpired = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags, roots[0])
 
                 if minJs:
                     minJs = getRelPath(minJs, roots[0])
-                    htmlPaths = version.updater.update(minJs, roots)
+                    minJsExpired = getRelPath(minJsExpired, roots[0])
+                    htmlPaths = version.updater.update(minJs, roots, minJsExpired)
 
                     relPaths.append(minJs)
                     for path in htmlPaths:
@@ -538,9 +551,29 @@ def main():
 
         if options.eos:
             addEosMission(relPaths, namespaceTarget)
+    elif output_mode == 'compiledSimple':
+        compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
+    elif output_mode == 'compiledSimpleByModule':
+        namespaceTarget = input_namespaces.copy().pop()
+        sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)
+
+        relPaths = []
+        for dep in sources:
+            namesapce = dep.provides.copy().pop()
+            if not re.compile("^test").match(namesapce):
+                minJs, htmlPaths = compileSimple(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags, roots, False)
+
+                if minJs:
+                    relPaths.append(minJs)
+                    for path in htmlPaths:
+                        relPaths.append(path)
+
+        if options.eos:
+            addEosMission(relPaths, namespaceTarget)
     elif output_mode == 'findEntriesByModule':
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
+        print 'length:', str(len(sources))
         for dep in sources:
             print dep.provides.copy().pop(), '\t', dep.GetPath()
     elif output_mode == 'findModulesByModule':

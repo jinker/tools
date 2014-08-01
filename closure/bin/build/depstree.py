@@ -109,6 +109,8 @@ class DepsTree(object):
             if self.inDependent(namespace, targetNamespace):
                 sources_by_module.add(source)
 
+        sources_by_module = list(sources_by_module)
+        sources_by_module = sorted(sources_by_module, key=lambda source: source.provides.copy().pop())
         return sources_by_module
 
     def GetDirectSourcesByNameSpace(self, namespace):

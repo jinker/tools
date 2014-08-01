@@ -27,7 +27,7 @@ def _GetOptionsParser():
     parser.add_option('--type',
         dest='type',
         action='store',
-        choices=['pathFromCmd', 'pathFromInput'],
+        choices=['pathFromCmd', 'pathFromInput', 'pathFromInputPhp'],
         default='pathFromInput',
         help='mission type')
 
@@ -94,6 +94,7 @@ if __name__ == "__main__":
     if options_type == 'pathFromCmd':
         fileRelativePaths = options.fileRelativePaths
         subject = options.subject
+        middlePath = '/html'
     elif options_type == 'pathFromInput':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
         fileRelPathsRaw = inputUtil.raw_input_multi_line()
@@ -106,8 +107,22 @@ if __name__ == "__main__":
         #fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
+        middlePath = '/html'
+    elif options_type == 'pathFromInputPhp':
+        logging.info("Please input file relative path(multiple split by semicolon): \n")
+        fileRelPathsRaw = inputUtil.raw_input_multi_line()
+
+        fileRelativePaths = []
+        for fileRelPath in fileRelPathsRaw:
+            fileRelativePaths.append(fileRelPath.replace("\\", "/"))
+
+
+        #fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
+
+        subject = raw_input("Please input subject: \n").replace("\\", "/")
+        middlePath = '/web_app'
 
     dir = re.sub('\\\\', '/', os.path.normpath(os.path.abspath(__file__)))
     dir = re.sub(r'/[^/]*$', '', dir)
     settings = json.loads(open(dir + '/setting.json').read())
-    addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=[settings['userName']], middlePath='/html')
+    addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=[settings['userName']], middlePath=middlePath)
