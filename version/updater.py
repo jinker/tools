@@ -1,3 +1,4 @@
+#coding:utf-8
 from util import svn
 
 __author__ = 'jinker'
@@ -10,6 +11,8 @@ import treescan
 import datetime
 import time
 import os
+
+BASE_BUILD_DIR = "/static/build"
 
 class FileConfig(object):
     _SUFFIX_MAP = {}
@@ -28,7 +31,7 @@ class FileConfig(object):
         self.regStrSet = regStrSet
         self._SUFFIX_MAP[fileSuffix] = self
 
-BASE_REG_STRING_SCRIPT = ['(<script[^>]*src=[\'"][^>]*%s)[^\'"]*([\'"][^>]*></script>)']
+BASE_REG_STRING_SCRIPT = ['(<script[^>]*src=[\'"])([^>]*%s)[^\'"]*([\'"][^>]*></script>)']
 BASE_REG_STRING_CSS = ['(<link[^>]*href=[\'"][^>]*%s)[^\'">]*([\'"][^>]*/?>)']
 BASE_REG_STR_IMG = [
     '(background:[^}]*url\([\'"]?[^\)]*%s)[^\)\'"]*([\'"]?\))', # background:url()
@@ -91,7 +94,7 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
 
     """
     result = 0
-    replacePatten = r'\1?t=' + versionStr + r'\2'
+    replacePatten = r'\1\2?t=' + versionStr + r'\3'
 
     fileObj = open(contentFilePath)
     content = fileObj.read()
@@ -114,7 +117,93 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
     return result
 
 
-def update(filePath, roots):
+def updateVersionByPathsNew(contentFilePath, regStrArr, fileRelPaths, filePathNewVersion):
+    result = 0
+    replacePatten = r'\1' + 'http://888.gtimg.com' + filePathNewVersion + r'\3'
+
+    fileObj = open(contentFilePath)
+    content = fileObj.read()
+
+    for fileRelPath in fileRelPaths:
+        for regStr in regStrArr:
+            reg = re.compile(regStr % fileRelPath)
+            if reg.search(content):
+                content = reg.sub(replacePatten, content)
+                result = 1
+
+    if result:
+        svn.lock(contentFilePath)
+        fileObjW = open(contentFilePath, "w")
+        fileObjW.write(content)
+        fileObjW.close()
+
+    fileObj.close()
+
+    return result
+
+
+def getTimeStampAndRelativePath():
+    fromtimestamp = datetime.datetime.fromtimestamp(time.time())
+    return (fromtimestamp.strftime('%Y%m%d%H%M'), '/' + fromtimestamp.strftime('%Y%m'))
+
+
+def update(filePath, roots, filePathExpired=None):
+    #判断是否使用行的版本管理策略
+    reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.c\.min\.js)$")
+    reg_match = reg.match(filePath)
+    if reg_match:
+        filePathPattern = reg_match.group(1) + '\d+' + reg_match.group(3) + '\d+' + reg_match.group(5)
+
+        fileType = os.path.splitext(filePath)[1]
+        fileConfig = FileConfig.getConfig(fileType)
+
+        if not fileConfig or not fileConfig.regStrSet:
+            logging.warn("File type not supported yet : " + fileType)
+            return
+
+        filePaths = set()
+        filePaths.add(filePathPattern)
+        filePaths.add(filePathExpired)
+        for dir in SOFT_LINKS_REL_DIR_MAP.keys():
+            softLinkReg = re.compile("^" + dir)
+            if softLinkReg.match(filePath):
+                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePath))
+                break
+            if softLinkReg.match(filePathExpired):
+                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePathExpired))
+                break
+
+        timestamp = getTimeStampAndRelativePath()[0]
+        logging.info("The new version : " + timestamp)
+
+        logging.info('Scanning paths...')
+        paths = set()
+        for path in roots:
+            for js_path in treescan.ScanTree(path, fileConfig.fileSearchFilter):
+                paths.add(js_path)
+        logging.info('%s sources scanned.', len(paths))
+
+        logging.info('Modifying version...')
+        updatedFilePaths = set()
+        for path in paths:
+            if updateVersionByPathsNew(path, fileConfig.regStrSet, filePaths, filePath):
+                updatedFilePaths.add(path)
+
+        if updatedFilePaths:
+            logging.info("The target html files is/are the follow(%s) :", len(updatedFilePaths))
+            index = 0
+            for path in updatedFilePaths:
+                index += 1
+                logging.info("\t" + str(index) + ".\t" + path)
+        else:
+            logging.info("No file updated.")
+
+        return updatedFilePaths
+    else:
+        return updateOld(filePath, roots)
+
+
+def updateOld(filePath, roots):
     paths = set()
     updatedFilePaths = set()
 
@@ -133,7 +222,7 @@ def update(filePath, roots):
             filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePath))
             break
 
-    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M')
+    timestamp = getTimeStampAndRelativePath()[0]
     logging.info("The new version : " + timestamp)
 
     logging.info('Scanning paths...')
@@ -174,4 +263,9 @@ def main():
     sys.exit(0)
 
 if __name__ == '__main__':
-    main()
+#    main()
+    path = '/static/build/201407/cp_jczq_all.201407311647.c.min.js'
+    reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.c\.min\.js)$")
+    reg_match = reg.match(path)
+    if reg_match:
+        print reg_match.group(1) + '\d+' + reg_match.group(3) + '\d+' + reg_match.group(5)
