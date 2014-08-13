@@ -16,8 +16,7 @@ def _GetOptionsParser():
         dest='output_file',
         action='store',
         help=('output file path'))
-    parser.add_option('-i',
-        '--root',
+    parser.add_option('--root',
         dest='root',
         action='store',
         help='root dir')
@@ -29,9 +28,10 @@ def main():
     options, args = _GetOptionsParser().parse_args()
     output = options.output_file
     input = options.input
+    options_root = options.root
     yui_compile = yui.Compile(input, output)
-#    if yui_compile:
-#        version.updater.update(output, options.root)
+    if yui_compile:
+        version.updater.update(output, options_root)
 
 if __name__ == "__main__":
     main()
