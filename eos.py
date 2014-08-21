@@ -27,7 +27,7 @@ def _GetOptionsParser():
     parser.add_option('--type',
         dest='type',
         action='store',
-        choices=['pathFromCmd', 'pathFromInput', 'pathFromInputPhp'],
+        choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp'],
         default='pathFromInput',
         help='mission type')
 
@@ -108,6 +108,10 @@ if __name__ == "__main__":
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         middlePath = '/html'
+    elif options_type == 'pathFromCmdPhp':
+        fileRelativePaths = options.fileRelativePaths
+        subject = options.subject
+        middlePath = '/web_app'
     elif options_type == 'pathFromInputPhp':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
         fileRelPathsRaw = inputUtil.raw_input_multi_line()
