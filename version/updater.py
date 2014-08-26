@@ -32,7 +32,7 @@ class FileConfig(object):
         self._SUFFIX_MAP[fileSuffix] = self
 
 BASE_REG_STRING_SCRIPT = ['(<script[^>]*src=[\'"])([^>]*%s)[^\'"]*([\'"][^>]*></script>)']
-BASE_REG_STRING_CSS = ['(<link[^>]*href=[\'"][^>]*%s)[^\'">]*([\'"][^>]*/?>)']
+BASE_REG_STRING_CSS = ['(<link[^>]*href=[\'"])([^>]*%s)[^\'">]*([\'"][^>]*/?>)']
 BASE_REG_STR_IMG = [
     '(background:[^}]*url\([\'"]?[^\)]*%s)[^\)\'"]*([\'"]?\))', # background:url()
     '(background-image:[\s]*[^;]*%s)[^;)]*([^;];)', # background-image:url() || background-image:
@@ -94,6 +94,7 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
 
     """
     result = 0
+
     replacePatten = r'\1\2?t=' + versionStr + r'\3'
 
     fileObj = open(contentFilePath)

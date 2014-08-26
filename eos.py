@@ -11,9 +11,11 @@ from util import inputUtil
 __author__ = 'jinkerjiang'
 
 MODULE_BOCAI_HOME = '315'
+MODULE_vb2c_lottery = '166'
 
 MODULE_PATH_PREFIX_MAP = {
-    MODULE_BOCAI_HOME: '/data/eos/dev/dist/bocai_home'
+    MODULE_BOCAI_HOME: '/data/eos/dev/dist/bocai_home',
+    MODULE_vb2c_lottery: '/data/eos/dev/dist/vb2c_lottery'
 }
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -27,7 +29,7 @@ def _GetOptionsParser():
     parser.add_option('--type',
         dest='type',
         action='store',
-        choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp'],
+        choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp', 'fullPath'],
         default='pathFromInput',
         help='mission type')
 
@@ -45,14 +47,24 @@ def _GetOptionsParser():
 
 
 def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None):
-    logging.info("EOS add mission task...")
     pathPrefix = MODULE_PATH_PREFIX_MAP[module]
     fullPaths = []
 
     if not middlePath:
         middlePath = ''
     for relPath in fileRelativePaths:
-        fullPaths.append(module + ';' + pathPrefix + middlePath + relPath + ';;')
+        fullPaths.append(pathPrefix + middlePath + relPath)
+
+    return doEos(executors, fullPaths, module, subject)
+
+
+def doEos(executors, fullPaths, module, subject):
+    Files = []
+
+    for path in fullPaths:
+        Files.append(module + ';' + path + ';;')
+
+    logging.info("EOS add mission task...")
     body = {
         'EEnv': '16',
         'IsConst': '0',
@@ -60,7 +72,7 @@ def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=Non
         'ExtExecuter': '',
         'Modules': module,
         'Desc': '',
-        'Files': ','.join(fullPaths),
+        'Files': ','.join(Files),
         'Subject': subject,
         'BEnv': '15',
         'TapdId': '',
@@ -82,51 +94,55 @@ def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=Non
     logging.info("\tresult:" + str(res))
     return res
 
-#addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=['/tt_jq.js', '/tt_sf.js'], subject='test', executors=['jinkerjiang'], middlePath='/html1')
-
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.info)
     options, args = _GetOptionsParser().parse_args()
     options_type = options.type
 
-    fileRelativePaths = []
+    dir = re.sub('\\\\', '/', os.path.normpath(os.path.abspath(__file__)))
+    dir = re.sub(r'/[^/]*$', '', dir)
+    settings = json.loads(open(dir + '/setting.json').read())
+
+    filePaths = []
     subject = ''
+    module = MODULE_BOCAI_HOME
+    middlePath = ''
+
     if options_type == 'pathFromCmd':
-        fileRelativePaths = options.fileRelativePaths
+        filePaths = options.fileRelativePaths
         subject = options.subject
         middlePath = '/html'
     elif options_type == 'pathFromInput':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
         fileRelPathsRaw = inputUtil.raw_input_multi_line()
 
-        fileRelativePaths = []
+        filePaths = []
         for fileRelPath in fileRelPathsRaw:
-            fileRelativePaths.append(fileRelPath.replace("\\", "/"))
-
-
-        #fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
+            filePaths.append(fileRelPath.replace("\\", "/"))
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         middlePath = '/html'
     elif options_type == 'pathFromCmdPhp':
-        fileRelativePaths = options.fileRelativePaths
+        filePaths = options.fileRelativePaths
         subject = options.subject
         middlePath = '/web_app'
     elif options_type == 'pathFromInputPhp':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
         fileRelPathsRaw = inputUtil.raw_input_multi_line()
 
-        fileRelativePaths = []
+        filePaths = []
         for fileRelPath in fileRelPathsRaw:
-            fileRelativePaths.append(fileRelPath.replace("\\", "/"))
-
-
-        #fileRelativePaths = raw_input("Please input file relative path(multiple split by semicolon): \n").replace("\\", "/").split(";")
+            filePaths.append(fileRelPath.replace("\\", "/"))
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         middlePath = '/web_app'
+    else:
+        logging.info("Please input file relative path(multiple split by semicolon): \n")
+        filePathsRaw = inputUtil.raw_input_multi_line()
+        subject = raw_input("Please input subject: \n").replace("\\", "/")
+        module = raw_input("Please input module: \n")
 
-    dir = re.sub('\\\\', '/', os.path.normpath(os.path.abspath(__file__)))
-    dir = re.sub(r'/[^/]*$', '', dir)
-    settings = json.loads(open(dir + '/setting.json').read())
-    addMissionTask(module=MODULE_BOCAI_HOME, fileRelativePaths=fileRelativePaths, subject=subject, executors=[settings['userName']], middlePath=middlePath)
+        for fileRelPath in filePathsRaw:
+            filePaths.append(fileRelPath.replace("\\", "/"))
+
+    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[settings['userName']], middlePath=middlePath)
