@@ -1,12 +1,9 @@
 #coding:utf-8
 import httplib
-import json
 import logging
 import optparse
-import os
-import re
 import urllib
-from util import inputUtil
+from util import inputUtil, authUtil
 
 __author__ = 'jinkerjiang'
 
@@ -99,10 +96,6 @@ if __name__ == "__main__":
     options, args = _GetOptionsParser().parse_args()
     options_type = options.type
 
-    dir = re.sub('\\\\', '/', os.path.normpath(os.path.abspath(__file__)))
-    dir = re.sub(r'/[^/]*$', '', dir)
-    settings = json.loads(open(dir + '/setting.json').read())
-
     filePaths = []
     subject = ''
     module = MODULE_BOCAI_HOME
@@ -145,4 +138,4 @@ if __name__ == "__main__":
         for fileRelPath in filePathsRaw:
             filePaths.append(fileRelPath.replace("\\", "/"))
 
-    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[settings['userName']], middlePath=middlePath)
+    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()], middlePath=middlePath)
