@@ -20,11 +20,12 @@ def _GetOptionsParser():
     return parser
 
 
-def toAmd(pathJs):
-    s = source.Source(source.GetFileContents(pathJs))
+def getAmdCodeBySource(s):
+    textRes = ''
+    modelName = None
     if s.provides:
-        textRes = ""
-        textOri = textOri = s.GetSource()
+        modelName = s.provides.copy().pop()
+        textOri = s.GetSource()
         name_map = s.getNameMap()
         names = s.getNames()
         names = sorted(names, reverse=True)
@@ -36,8 +37,6 @@ def toAmd(pathJs):
             matchSoy = source._REQUIRES_REGEX_SOY_OR_SOYDATA.match(line)
             if matchSoy:
                 continue
-
-
             elif matchProvide:
                 provide = matchProvide.group(1)
                 textRes += u'\n//本文件由closure模块转换而来，请不要直接编辑，如果决定取消对应的closure模块，方可编辑'.encode("gb2312")
@@ -46,8 +45,6 @@ def toAmd(pathJs):
             elif matchRequire:
                 require = matchRequire.group(1)
                 camel_name = s.getCamelName(require)
-                if not camel_name:
-                    print pathJs
                 textRes += '\nvar ' + camel_name + ' = require("' + require + '");'
             else:
                 if not source.isComment(line):
@@ -56,15 +53,30 @@ def toAmd(pathJs):
                 line = source._REGEX_SOY_OR_SOYDATA.sub('(', line)
                 textRes += "\n" + line
 
-        textRes += "\nreturn " + name_map[s.provides.pop()] + ';'
+        textRes += "\nreturn " + name_map[modelName] + ';'
         textRes += "\n});"
-        #输出
-        out = open(getAmdFilePath(pathJs), 'w')
+
         beautifier_options = jsbeautifier.BeautifierOptions()
         beautifier_options.indent_with_tabs = True
-        out.write(jsbeautifier.beautify(textRes, beautifier_options))
+        textRes = jsbeautifier.beautify(textRes, beautifier_options)
+    return textRes, modelName
+
+
+def getAmdCode(pathJs):
+    s = source.Source(source.GetFileContents(pathJs))
+    return getAmdCodeBySource(s)
+
+
+def toAmd(pathJs):
+    textRes, modelName = getAmdCode(pathJs)
+
+    if textRes:
+        #输出
+        out = open(getAmdFilePath(pathJs), 'w')
+        out.write(textRes)
         return True
-    return False
+    else:
+        return False
 
 
 def getAmdFilePath(path):

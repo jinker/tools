@@ -29,6 +29,10 @@ def postLegos(body, url):
 
 
 def save(id, pid, name, title, desc, code, filename):
+    try:
+        code = code.decode('gb2312').encode('utf-8')
+    except:
+        pass
     url = "/legos4.php/package/save"
     body = {
         'id': id,
@@ -53,6 +57,10 @@ def createModule(pid, name, title='', desc='', code=''):
 
 
 def saveByModelName(name, code, pid=None):
+    try:
+        code = code.decode('gb2312').encode('utf-8')
+    except:
+        pass
     logging.info('model name : ' + name)
     url = "/legos4.php/package/saveByModelName"
     body = {
@@ -77,6 +85,10 @@ def saveByModelName(name, code, pid=None):
 
 
 def getModuleName(fileContent):
+    try:
+        fileContent = fileContent.decode('gb2312').encode('utf-8')
+    except:
+        pass
     reg = re.compile('define\([\'"]([\w\d\._-]+)[\'"]')
     content_splitlines = fileContent.splitlines()
     for line in content_splitlines:

@@ -57,6 +57,9 @@ class Source(object):
         Args:
           source: str, The JavaScript source.
         """
+        self.nameSpaces = []
+
+        self.nameMap = {}
 
         self.provides = set()
         self.requires = set()
@@ -67,6 +70,12 @@ class Source(object):
     def __str__(self):
         return 'Source %s' % self._path
 
+    def snakeCased(self, str):
+        return str.replace(".", "_")
+
+    def getNameMap(self):
+        return self.nameMap
+
     def GetSource(self):
         """Get the source as a string."""
         return self._source
@@ -75,6 +84,19 @@ class Source(object):
     def _StripComments(cls, source):
         return cls._COMMENT_REGEX.sub('', source)
 
+    def getNames(self):
+        return self.nameSpaces
+
+    def getCamelName(self, str):
+        try:
+            value = self.nameMap[str]
+            if value:
+                return value
+        except Exception:
+            pass
+
+        return None
+
     def _ScanSource(self):
         """Fill in provides and requires by scanning the source."""
 
@@ -82,12 +104,19 @@ class Source(object):
 
         source_lines = source.splitlines()
         for line in source_lines:
+            match_group = ''
             match = _PROVIDE_REGEX.match(line)
             if match:
+                match_group = match.group(1)
                 self.provides.add(match.group(1))
             match = _REQUIRES_REGEX.match(line)
             if match:
-                self.requires.add(match.group(1))
+                match_group = match.group(1)
+                self.requires.add(match_group)
+
+            if match_group:
+                self.nameMap[match_group] = self.snakeCased(match_group)
+                self.nameSpaces.append(match_group)
 
         # Closure's base file implicitly provides 'goog'.
         for line in source_lines:

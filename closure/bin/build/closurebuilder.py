@@ -28,8 +28,9 @@ all JS files below a directory.
 usage: %prog [options] [file1.js file2.js ...]
 """
 import re
-from closure.bin.build import depswriter
+from closure2amd import closure2amd
 import eos
+from legos import legos
 import util.svn
 import version.updater
 
@@ -82,7 +83,7 @@ def _GetOptionsParser():
         type='choice',
         action='store',
         choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule', 'calcdepsIndependent', 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
-                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule', 'calcdepsIndependentByModule'],
+                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule', 'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
         default='list',
         help='The type of output to generate from this script. '
              'Options are "list" for a list of filenames, "script" '
@@ -451,6 +452,15 @@ def getRelPath(minJs, root):
     return "/" + os.path.relpath(minJs, root).replace("\\", "/")
 
 
+def convertToLegos(dep):
+    modelName = dep.provides.copy().pop()
+    if ((re.compile('goog\.cp')).match(modelName) or not (re.compile('goog')).match(modelName)) and not (re.compile('^soy')).match(modelName):
+        amdCode, modelName = closure2amd.getAmdCodeBySource(dep)
+        createRes = legos.createModule(pid='100', name=modelName, title=modelName, desc='', code=amdCode)
+        if not createRes:
+            legos.saveByModelName(name=modelName, code=amdCode)
+
+
 def main():
     logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
         level=logging.INFO)
@@ -586,6 +596,11 @@ def main():
 
         for dep in sources:
             writeDepsFile([base] + tree.GetDependencies(dep.provides.copy().pop()), dep.provides, output_dir, root_with_prefix)
+    elif output_mode == 'convertToLegosByEntrypoint':
+        for dep in deps:
+            convertToLegos(dep)
+    elif output_mode == 'convertToLegos':
+        convertToLegos(_PathSource(inputs[0]))
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
