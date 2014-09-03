@@ -2,7 +2,6 @@
 import httplib
 import json
 import logging
-import optparse
 import re
 import urllib
 from util import authUtil
@@ -10,32 +9,6 @@ from util import authUtil
 __author__ = 'jinkerjiang'
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
-
-
-def _GetOptionsParser():
-    """Get the options parser."""
-
-    parser = optparse.OptionParser(__doc__)
-
-    parser.add_option('--type',
-        dest='type',
-        action='store',
-        choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp', 'fullPath'],
-        default='pathFromInput',
-        help='mission type')
-
-    parser.add_option('--fileRelativePath',
-        dest='fileRelativePaths',
-        action='append',
-        help='file relative path')
-
-    parser.add_option('--subject',
-        dest='subject',
-        action='store',
-        help='subject')
-
-    return parser
-
 
 def postLegos(body, url):
     logging.info("legos save module...")
@@ -52,7 +25,7 @@ def postLegos(body, url):
     headers = response.getheaders()
     text = response.read()
     conn.close()
-    return headers, text
+    return headers, text, response
 
 
 def save(id, pid, name, title, desc, code, filename):
@@ -66,39 +39,50 @@ def save(id, pid, name, title, desc, code, filename):
         'desc': desc,
         'code': code
     }
-    headers, text = postLegos(body, url)
+    headers, text, response = postLegos(body, url)
+    headerLocation = response.getheader('Location')
     res = False
-    if (re.compile('http://legos\.cm\.com/legos4\.php/package\?id=\d+&pid=\d+&result=1')).match(headers['Location']):
+    if headerLocation and (re.compile('http://legos\.cm\.com/legos4\.php/package\?id=\d+&pid=\d+&result=1')).match(headerLocation):
         res = True
     logging.info("\tresult:" + str(res))
     return res
 
 
 def createModule(pid, name, title='', desc='', code=''):
-    return save('', pid, title, name, '', desc, code)
+    return save(id='', pid=pid, name=name, title=title, desc=desc, code=code, filename='')
 
 
-def saveByModelName(name, code):
+def saveByModelName(name, code, pid=None):
+    logging.info('model name : ' + name)
     url = "/legos4.php/package/saveByModelName"
     body = {
         'modelName': name,
         'code': code
     }
-    headers, text = postLegos(body, url)
+    if pid:
+        body['pid'] = pid
+
+    headers, text, response = postLegos(body, url)
     res = False
     try:
         info = json.loads(text)
-        res = info['code'] == code
+        if pid:
+            res = info['pid'] == pid
+        else:
+            res = (info['code']).encode('utf-8') == code
     except:
         pass
     logging.info("\tresult:" + str(res))
     return res
 
 
-if __name__ == "__main__":
-    logging.basicConfig(format='%(message)s', level=logging.info)
-    options, args = _GetOptionsParser().parse_args()
-    options_type = options.type
-
-    #    save(id='1896', pid='59', title='testName1', name='test.test2', filename='', desc='desc', code='//code1123143')
-    saveByModelName('test.test2', '//1123456789')
+def getModuleName(fileContent):
+    reg = re.compile('define\([\'"]([\w\d\._-]+)[\'"]')
+    content_splitlines = fileContent.splitlines()
+    for line in content_splitlines:
+        match = reg.match(line)
+        if match:
+            break
+    if match:
+        return match.group(1)
+    return None
