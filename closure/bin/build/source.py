@@ -33,6 +33,19 @@ _STRING_REGEX_LINE = re.compile('(\'.*?(?<!\\\)\'|".*?(?<!\\\)")')
 _GOOG_BASE_LINE = (
     'var goog = goog || {}; // Identifies this file as the Closure base.')
 
+_REQUIRES_REGEX_SOY_OR_SOYDATA = re.compile('^\s*goog\.require\(\s*[\'"](soy|soydata)[\'"]\s*\)')
+_REGEX_SOY_OR_SOYDATA = re.compile('(soy|soydata)\.[^(]+\(')
+
+COMMENT_REGEXS = [
+    re.compile('^\s*//'), #//
+    re.compile('^\s*/?\*+\s*@(lends|class|param|return|augments|constructs|example)'), #/* @lends|class|param|return|augments|constructs|example
+]
+
+def isComment(line):
+    for reg in COMMENT_REGEXS:
+        if reg.match(line):
+            return True
+    return False
 
 class Source(object):
     """Scans a JavaScript source for its provided and required namespaces."""

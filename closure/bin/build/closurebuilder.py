@@ -213,7 +213,7 @@ def _GetPair(s):
     try:
         # shlex uses '\' as an escape character, so they must be escaped.
         #s = s.replace('\\', '\\\\')
-        first, second = s.split('||')
+        first, second = s.split('*')
         return (first, second)
     except:
         raise Exception('Unable to parse input line as a pair: %s' % s)

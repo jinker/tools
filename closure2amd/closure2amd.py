@@ -2,8 +2,8 @@
 import jsbeautifier
 import optparse
 import os
+from closure.bin.build import source
 import treescan
-import source
 
 __author__ = 'jinker'
 
@@ -82,7 +82,8 @@ def toAmd(pathJs):
 def getAmdFilePath(path):
     return os.path.dirname(path) + "/" + os.path.splitext(os.path.basename(path))[0] + ".amd.js"
 
-if __name__ == "__main__":
+
+def main():
 #    for pathJs in treescan.ScanTreeForJsFiles("E:/workspace/tools/closure2amd/test"):
 #        toAmd(pathJs)
 
