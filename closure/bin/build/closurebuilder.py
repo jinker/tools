@@ -281,7 +281,7 @@ class _PathSource(source.Source):
 
             re_provide = re.compile('((\n?\s*goog\.provide\(\s*[\'"].*[\'"]\s*\);?\n*)+)')
             if requiresDirect:
-                sourceNew = re_provide.sub(r'\1\n' + requireStatements, sourceNew)
+                sourceNew = re_provide.sub(r'\1' + requireStatements, sourceNew)
 
             if sourceNew != self._source:
                 self._source = sourceNew
@@ -458,7 +458,7 @@ def convertToLegos(dep):
         amdCode, modelName = closure2amd.getAmdCodeBySource(dep)
         createRes = legos.createModule(pid='100', name=modelName, title=modelName, desc='', code=amdCode)
         if not createRes:
-            legos.saveByModelName(name=modelName, code=amdCode)
+            legos.saveByModelName(name=modelName, code=amdCode, compressionType='option1')
 
 
 def main():

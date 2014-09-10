@@ -56,7 +56,7 @@ def createModule(pid, name, title='', desc='', code=''):
     return save(id='', pid=pid, name=name, title=title, desc=desc, code=code, filename='')
 
 
-def saveByModelName(name, code, pid=None):
+def saveByModelName(name, code, pid=None, compressionType=None):
     try:
         code = code.decode('gb2312').encode('utf-8')
     except:
@@ -69,6 +69,9 @@ def saveByModelName(name, code, pid=None):
     }
     if pid:
         body['pid'] = pid
+
+    if compressionType:
+        body['compressiontype'] = compressionType
 
     headers, text, response = postLegos(body, url)
     res = False

@@ -41,6 +41,7 @@ def getAmdCodeBySource(s):
                 provide = matchProvide.group(1)
                 textRes += u'\n//本文件由closure模块转换而来，请不要直接编辑，如果决定取消对应的closure模块，方可编辑'.encode("gb2312")
                 textRes += '\ndefine("' + provide + '", function (require, exports) {'
+                textRes += '\nvar _cacheThisModule_;\n'
                 textRes += '\nvar ' + s.getCamelName(provide) + ' = {};'
             elif matchRequire:
                 require = matchRequire.group(1)
