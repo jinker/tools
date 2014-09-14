@@ -82,8 +82,10 @@ def _GetOptionsParser():
         dest='output_mode',
         type='choice',
         action='store',
-        choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule', 'calcdepsIndependent', 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
-                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule', 'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
+        choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule', 'calcdepsIndependent',
+                 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
+                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule',
+                 'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
         default='list',
         help='The type of output to generate from this script. '
              'Options are "list" for a list of filenames, "script" '
@@ -173,8 +175,9 @@ def _GetClosureBaseFile(sources):
     js_source for js_source in sources if _IsClosureBaseFile(js_source)]
 
     if not base_files:
-        logging.error('No Closure base.js file found.')
-        sys.exit(1)
+        logging.warning('No Closure base.js file found.')
+        return None
+        #        sys.exit(1)
     if len(base_files) > 1:
         logging.error('More than one Closure base.js files found at these paths:')
         for base_file in base_files:
@@ -291,6 +294,10 @@ class _PathSource(source.Source):
 
 
 def writeDepsFile(deps, input_namespaces, outputDir, rootWithPrefix):
+    try:
+        os.makedirs(outputDir)
+    except:
+        pass
     depsPath = outputDir + "/" + input_namespaces.copy().pop() + ".deps.js"
     util.svn.lock(depsPath)
     out = open(depsPath, 'w')
@@ -394,7 +401,8 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
     if minJs:
         out = open(minJs, "r")
         content = out.read()
-        content = re.sub('var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '', content)
+        content = re.sub('var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '',
+            content)
         #将"goog.require(...);"移除
         content = re.sub('goog\.require\([^)]*\);', '', content)
         #将"goog.provide(...);"替换成"CP.util.namespace(...);"
@@ -454,7 +462,8 @@ def getRelPath(minJs, root):
 
 def convertToLegos(dep):
     modelName = dep.provides.copy().pop()
-    if ((re.compile('goog\.cp')).match(modelName) or not (re.compile('goog')).match(modelName)) and not (re.compile('^soy')).match(modelName):
+    if ((re.compile('goog\.cp')).match(modelName) or not (re.compile('goog')).match(modelName)) and not (
+        re.compile('^soy')).match(modelName):
         amdCode, modelName = closure2amd.getAmdCodeBySource(dep)
         createRes = legos.createModule(pid='100', name=modelName, title=modelName, desc='', code=amdCode)
         if not createRes:
@@ -506,9 +515,12 @@ def main():
                       'specified with the --namespace or --input flags.')
         sys.exit(2)
 
+    deps = tree.GetDependencies(input_namespaces)
+
     # The Closure Library base file must go first.
     base = _GetClosureBaseFile(sources)
-    deps = [base] + tree.GetDependencies(input_namespaces)
+    if base:
+        deps = [base] + deps
 
     if output_mode == 'list':
         out.writelines([js_source.GetPath() + '\n' for js_source in deps])
@@ -548,7 +560,8 @@ def main():
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
-                minJs, minJsExpired = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags, roots[0])
+                minJs, minJsExpired = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce),
+                    [dep.GetPath()], compiler_flags, roots[0])
 
                 if minJs:
                     minJs = getRelPath(minJs, roots[0])
@@ -571,7 +584,8 @@ def main():
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
-                minJs, htmlPaths = compileSimple(compiler_jar_path, [base] + tree.GetDependencies(namesapce), [dep.GetPath()], compiler_flags, roots, False)
+                minJs, htmlPaths = compileSimple(compiler_jar_path, [base] + tree.GetDependencies(namesapce),
+                    [dep.GetPath()], compiler_flags, roots, False)
 
                 if minJs:
                     relPaths.append(minJs)
@@ -595,7 +609,8 @@ def main():
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
         for dep in sources:
-            writeDepsFile([base] + tree.GetDependencies(dep.provides.copy().pop()), dep.provides, output_dir, root_with_prefix)
+            writeDepsFile([base] + tree.GetDependencies(dep.provides.copy().pop()), dep.provides, output_dir,
+                root_with_prefix)
     elif output_mode == 'convertToLegosByEntrypoint':
         for dep in deps:
             convertToLegos(dep)
@@ -607,4 +622,5 @@ def main():
 
 
 def addEosMission(filePaths, subject):
-    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject, executors=['jinkerjiang'], middlePath='/html')
+    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject,
+        executors=['jinkerjiang'], middlePath='/html')
