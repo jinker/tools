@@ -83,6 +83,7 @@ def saveByModelName(name, code, pid=None, compressionType=None):
             res = (info['code']).encode('utf-8') == code
     except:
         pass
+    logging.info('response : ' + text)
     logging.info("\tresult:" + str(res))
     return res
 
