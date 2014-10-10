@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import httplib
 import json
 import logging
@@ -9,6 +9,7 @@ from util import authUtil
 __author__ = 'jinkerjiang'
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
+
 
 def postLegos(body, url):
     logging.info("legos save module...")
@@ -46,7 +47,8 @@ def save(id, pid, name, title, desc, code, filename):
     headers, text, response = postLegos(body, url)
     headerLocation = response.getheader('Location')
     res = False
-    if headerLocation and (re.compile('http://legos\.cm\.com/legos4\.php/package\?id=\d+&pid=\d+&result=1')).match(headerLocation):
+    if headerLocation and (re.compile('http://legos\.cm\.com/legos4\.php/package\?id=\d+&pid=\d+&result=1')).match(
+            headerLocation):
         res = True
     logging.info("\tresult:" + str(res))
     return res
