@@ -4,26 +4,27 @@ from legos import legos
 
 __author__ = 'jinkerjiang'
 
+
 def _GetOptionsParser():
     """Get the options parser."""
 
     parser = optparse.OptionParser(__doc__)
 
     parser.add_option('--type',
-        dest='type',
-        action='store',
-        choices=['saveModelByPath'],
-        help='mission type')
+                      dest='type',
+                      action='store',
+                      choices=['saveModelByPath', 'pubIdcModelByPath'],
+                      help='mission type')
 
     parser.add_option('--filePath',
-        dest='filePath',
-        action='store',
-        help='file path')
+                      dest='filePath',
+                      action='store',
+                      help='file path')
 
     parser.add_option('--pid',
-        dest='pid',
-        action='store',
-        help='project id')
+                      dest='pid',
+                      action='store',
+                      help='project id')
 
     return parser
 
@@ -46,18 +47,21 @@ def u(s, encoding):
     else:
         return unicode(s, encoding)
 
+
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.info)
     options, args = _GetOptionsParser().parse_args()
     options_type = options.type
 
-#    legos.saveByModelName('test.test11', '//0012', '59')
-#    legos.createModule(pid='59', name='test.test8', title='jinkerTest', desc='desc', code='//code')
+    # legos.saveByModelName('test.test11', '//0012', '59')
+    #    legos.createModule(pid='59', name='test.test8', title='jinkerTest', desc='desc', code='//code')
+    name, code = getModelInfo(options.filePath)
     if options_type == 'saveModelByPath':
-        name, code = getModelInfo(options.filePath)
         if name:
             pid = options.pid
             if pid:
                 legos.createModule(pid=pid, name=name, title=name, desc='', code=code)
             else:
                 legos.saveByModelName(name=name, code=code, pid=pid)
+    elif options_type == 'pubIdcModelByPath':
+        legos.pubIdcByModuleName(name=name)

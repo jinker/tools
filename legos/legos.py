@@ -72,8 +72,10 @@ def saveByModelName(name, code, pid=None, compressionType=None):
     if pid:
         body['pid'] = pid
 
-    if compressionType:
-        body['compressiontype'] = compressionType
+    if not compressionType:
+        compressionType = 'option1'
+
+    body['compressiontype'] = compressionType
 
     headers, text, response = postLegos(body, url)
     res = False
@@ -104,3 +106,21 @@ def getModuleName(fileContent):
     if match:
         return match.group(1)
     return None
+
+
+def pubIdcByModuleName(name):
+    logging.info('model name : ' + name)
+    url = "/legos4.php/package/pubIdcByModelName"
+    body = {
+        'modelName': name
+    }
+
+    headers, text, response = postLegos(body, url)
+    res = False
+    try:
+        info = json.loads(text)
+        res = info['name'] == name
+    except:
+        pass
+    logging.info("\tresult:" + str(res))
+    return res
