@@ -84,10 +84,42 @@ def saveByModelName(name, code, pid=None, compressionType=None):
         if pid:
             res = info['pid'] == pid
         else:
-            res = (info['code']).encode('utf-8') == code
+            res = info['name'] == name
     except:
         pass
-    logging.info('response : ' + text)
+    logging.info("\tresult:" + str(res))
+    return res
+
+
+def saveTplByModelName(name, code, pid=None, compressionType=None):
+    try:
+        code = code.decode('gb2312').encode('utf-8')
+    except:
+        pass
+    logging.info('model name : ' + name)
+    url = "/legos4.php/tpl/saveByModelName"
+    body = {
+        'modelName': name,
+        'source': code
+    }
+    if pid:
+        body['pid'] = pid
+
+    if not compressionType:
+        compressionType = 'option1'
+
+    body['compressiontype'] = compressionType
+
+    headers, text, response = postLegos(body, url)
+    res = False
+    try:
+        info = json.loads(text)
+        if pid:
+            res = info['pid'] == pid
+        else:
+            res = info['name'] == name
+    except:
+        pass
     logging.info("\tresult:" + str(res))
     return res
 
@@ -105,6 +137,23 @@ def getModuleName(fileContent):
             break
     if match:
         return match.group(1)
+    return None
+
+
+def getModuleNameFromTpl(fileContent):
+    try:
+        fileContent = fileContent.decode('gb2312').encode('utf-8')
+    except:
+        pass
+    # <script type="text/template" id="888pc.index.zxhm">
+    reg = re.compile('<script(?: type=[\'"]text\/template[\'"])? id=[\'"]([\w\d\._-]+)[\'"]>')
+    content_splitlines = fileContent.splitlines()
+    for line in content_splitlines:
+        match = reg.match(line)
+        if match:
+            break
+    if match:
+        return 'tpl_' + match.group(1)
     return None
 
 

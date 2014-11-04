@@ -30,6 +30,7 @@ def _GetOptionsParser():
 
 
 def getModelInfo(filePath):
+    isTpl = False
     text = open(filePath).read()
 
     try:
@@ -38,7 +39,11 @@ def getModelInfo(filePath):
         pass
 
     name = legos.getModuleName(text)
-    return name, text
+    if not name:
+        name = legos.getModuleNameFromTpl(text)
+        isTpl = True
+
+    return name, text, isTpl
 
 
 def u(s, encoding):
@@ -54,14 +59,17 @@ if __name__ == "__main__":
     options_type = options.type
 
     # legos.saveByModelName('test.test11', '//0012', '59')
-    #    legos.createModule(pid='59', name='test.test8', title='jinkerTest', desc='desc', code='//code')
-    name, code = getModelInfo(options.filePath)
+    # legos.createModule(pid='59', name='test.test8', title='jinkerTest', desc='desc', code='//code')
+    name, code, isTpl = getModelInfo(options.filePath)
     if options_type == 'saveModelByPath':
         if name:
             pid = options.pid
-            if pid:
-                legos.createModule(pid=pid, name=name, title=name, desc='', code=code)
+            if not isTpl:
+                if pid:
+                    legos.createModule(pid=pid, name=name, title=name, desc='', code=code)
+                else:
+                    legos.saveByModelName(name=name, code=code, pid=pid)
             else:
-                legos.saveByModelName(name=name, code=code, pid=pid)
+                legos.saveTplByModelName(name=name, code=code, pid=pid)
     elif options_type == 'pubIdcModelByPath':
         legos.pubIdcByModuleName(name=name)
