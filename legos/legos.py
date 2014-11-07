@@ -129,7 +129,7 @@ def getModuleName(fileContent):
         fileContent = fileContent.decode('gb2312').encode('utf-8')
     except:
         pass
-    reg = re.compile('define\([\'"]([\w\d\._-]+)[\'"]')
+    reg = re.compile('define\([\'"]([\w\d\\$._-]+)[\'"]')
     content_splitlines = fileContent.splitlines()
     for line in content_splitlines:
         match = reg.match(line)
@@ -146,7 +146,7 @@ def getModuleNameFromTpl(fileContent):
     except:
         pass
     # <script type="text/template" id="888pc.index.zxhm">
-    reg = re.compile('<script(?: type=[\'"]text\/template[\'"])? id=[\'"]([\w\d\._-]+)[\'"]>')
+    reg = re.compile('<script(?: type=[\'"]text\/template[\'"])? id=[\'"]([\w\d\\$._-]+)[\'"]>')
     content_splitlines = fileContent.splitlines()
     for line in content_splitlines:
         match = reg.match(line)

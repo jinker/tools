@@ -61,8 +61,8 @@ if __name__ == "__main__":
     # legos.saveByModelName('test.test11', '//0012', '59')
     # legos.createModule(pid='59', name='test.test8', title='jinkerTest', desc='desc', code='//code')
     name, code, isTpl = getModelInfo(options.filePath)
-    if options_type == 'saveModelByPath':
-        if name:
+    if name:
+        if options_type == 'saveModelByPath':
             pid = options.pid
             if not isTpl:
                 if pid:
@@ -71,5 +71,7 @@ if __name__ == "__main__":
                     legos.saveByModelName(name=name, code=code, pid=pid)
             else:
                 legos.saveTplByModelName(name=name, code=code, pid=pid)
-    elif options_type == 'pubIdcModelByPath':
-        legos.pubIdcByModuleName(name=name)
+        elif options_type == 'pubIdcModelByPath':
+            legos.pubIdcByModuleName(name=name)
+    else:
+        logging.info("It's not a amd js")
