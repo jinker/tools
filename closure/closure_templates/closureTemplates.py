@@ -33,7 +33,7 @@ def process(inputs, outputPathFormat=None):
         return
 
     if not outputPathFormat:
-        outputPathFormat = '{INPUT_DIRECTORY}\{INPUT_FILE_NAME_NO_EXT}.js'
+        outputPathFormat = '{INPUT_DIRECTORY}/{INPUT_FILE_NAME_NO_EXT}.js'
 
     outputPaths = []
     for input in inputs:
