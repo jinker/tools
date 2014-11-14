@@ -426,6 +426,7 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
             relPaths.append(rel_path)
 
         if exeEos:
+            util.svn.add(relPaths)
             addEosMission(relPaths, minJs)
 
     return (minJs, htmlRealPaths)
@@ -550,6 +551,7 @@ def main():
                 relPaths.append(getRelPath(path, roots[0]))
 
             if options.eos:
+                util.svn.add(relPaths)
                 addEosMission(relPaths, minJs)
         else:
             sys.exit(1)
@@ -574,6 +576,7 @@ def main():
                         relPaths.append(getRelPath(path, roots[0]))
 
         if options.eos:
+            util.svn.add(relPaths)
             addEosMission(relPaths, namespaceTarget)
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
@@ -594,6 +597,7 @@ def main():
                         relPaths.append(path)
 
         if options.eos:
+            util.svn.add(relPaths)
             addEosMission(relPaths, namespaceTarget)
     elif output_mode == 'findEntriesByModule':
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
