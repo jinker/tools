@@ -3,15 +3,18 @@ import subprocess
 __author__ = 'jinkerjiang'
 
 
-def lock(path):
+def lock(path, force=True):
     try:
-        process = subprocess.Popen(("svn lock --force " + path).split(" "), stdout=subprocess.PIPE,
+        cmd = "svn lock"
+        if force:
+            cmd += ' --force'
+        cmd += ' ' + path
+        process = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         process.communicate()
+        return True
     except Exception:
-        pass
-    finally:
-        pass
+        return False
 
 
 def add(paths):
@@ -27,6 +30,7 @@ def add(paths):
 
 def isUnderVersionAndLocked(path):
     pass
+
 
 if __name__ == '__main__':
     add([

@@ -1,3 +1,5 @@
+import mmap
+
 __author__ = 'jinkerjiang'
 
 from tempfile import mkstemp
@@ -22,3 +24,15 @@ def replace(file_path, replacements):
     remove(file_path)
     # Move new file
     move(abs_path, file_path)
+
+
+def contain(file_path, pattern):
+    try:
+        f = open(file_path)
+        s = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        if s.find(pattern) != -1:
+            return True
+    except Exception:
+        return False
+
+    return False

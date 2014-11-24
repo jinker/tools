@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import jsbeautifier
 import optparse
 import os
@@ -7,15 +7,16 @@ import treescan
 
 __author__ = 'jinker'
 
+
 def _GetOptionsParser():
     """Get the options parser."""
 
     parser = optparse.OptionParser(__doc__)
 
     parser.add_option('--filePath',
-        dest='filePath',
-        action='store',
-        help='js or css file path')
+                      dest='filePath',
+                      action='store',
+                      help='js or css file path')
 
     return parser
 
@@ -45,8 +46,12 @@ def getAmdCodeBySource(s):
                 textRes += '\nvar ' + s.getCamelName(provide) + ' = {};'
             elif matchRequire:
                 require = matchRequire.group(1)
-                camel_name = s.getCamelName(require)
-                textRes += '\nvar ' + camel_name + ' = require("' + require + '");'
+                if require != 'cp.$':
+                    camel_name = s.getCamelName(require)
+                    textRes += '\nvar ' + camel_name + ' = require("' + require + '");'
+                else:
+                    textRes += '\nvar $ = require("{jquery}");'
+                    textRes += '\nvar jQuery = $;'
             else:
                 if not source.isComment(line):
                     for name in names:
@@ -85,8 +90,8 @@ def getAmdFilePath(path):
 
 
 def main():
-#    for pathJs in treescan.ScanTreeForJsFiles("E:/workspace/tools/closure2amd/test"):
-#        toAmd(pathJs)
+    #    for pathJs in treescan.ScanTreeForJsFiles("E:/workspace/tools/closure2amd/test"):
+    #        toAmd(pathJs)
 
     options, args = _GetOptionsParser().parse_args()
     filePath = options.filePath

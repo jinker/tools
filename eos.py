@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import httplib
 import logging
 import optparse
@@ -24,27 +24,30 @@ def _GetOptionsParser():
     parser = optparse.OptionParser(__doc__)
 
     parser.add_option('--type',
-        dest='type',
-        action='store',
-        choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp', 'fullPath'],
-        default='pathFromInput',
-        help='mission type')
+                      dest='type',
+                      action='store',
+                      choices=['pathFromCmd', 'pathFromInput', 'pathFromCmdPhp', 'pathFromInputPhp', 'fullPath'],
+                      default='pathFromInput',
+                      help='mission type')
 
     parser.add_option('--fileRelativePath',
-        dest='fileRelativePaths',
-        action='append',
-        help='file relative path')
+                      dest='fileRelativePaths',
+                      action='append',
+                      help='file relative path')
 
     parser.add_option('--subject',
-        dest='subject',
-        action='store',
-        help='subject')
+                      dest='subject',
+                      action='store',
+                      help='subject')
 
     return parser
 
 
-def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None):
-    pathPrefix = MODULE_PATH_PREFIX_MAP[module]
+def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None, begin=1, end=2):
+    if module:
+        pathPrefix = MODULE_PATH_PREFIX_MAP[module]
+    else:
+        pathPrefix = ''
     fullPaths = []
 
     if not middlePath:
@@ -52,10 +55,10 @@ def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=Non
     for relPath in fileRelativePaths:
         fullPaths.append(pathPrefix + middlePath + relPath)
 
-    return doEos(executors, fullPaths, module, subject)
+    return doEosByApi(executors, fullPaths, module, subject, begin, end)
 
 
-def doEos(executors, fullPaths, module, subject):
+def doEos(executors, fullPaths, module, subject, begin, end):
     Files = []
 
     for path in fullPaths:
@@ -90,6 +93,36 @@ def doEos(executors, fullPaths, module, subject):
     res = 'ok' == responseText
     logging.info("\tresult:" + str(res))
     return res
+
+
+def doEosByApi(executors, fullPaths, module, subject, begin=1, end=2):
+    logging.info("EOS add mission task...")
+
+    body = {
+        'exeuser': ';'.join(executors),
+        'files': ','.join(fullPaths),
+        'subject': subject,
+        'benv': begin,
+        'eenv': end,
+        'isexec': 'true'
+    }
+    headers = {
+        'Cookie': 'PHPSESSID=1gd1sri6c3rq880uj9oc0j8u31;'
+    }
+    conn = httplib.HTTPConnection("vtools.oa.com", 80)
+    conn.request("POST", "/dsrm.php/eos/addMission?" + urllib.urlencode(body), "", headers)
+    response = conn.getresponse()
+    responseText = response.read()
+    conn.close()
+    res = '发布任务创建成功，请登录Eos执行。' == responseText
+    try:
+        responseText = responseText.decode('utf-8').encode('gb2312')
+    except Exception:
+        pass
+    logging.info(responseText)
+    logging.info("\tresult:" + str(res))
+    return res
+
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.info)
@@ -138,4 +171,5 @@ if __name__ == "__main__":
         for fileRelPath in filePathsRaw:
             filePaths.append(fileRelPath.replace("\\", "/"))
 
-    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()], middlePath=middlePath)
+    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()],
+                   middlePath=middlePath)
