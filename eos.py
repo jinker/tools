@@ -3,7 +3,9 @@ import httplib
 import logging
 import optparse
 import urllib
+
 from util import inputUtil, authUtil
+
 
 __author__ = 'jinkerjiang'
 

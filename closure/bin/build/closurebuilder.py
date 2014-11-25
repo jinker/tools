@@ -1,5 +1,5 @@
-#coding:utf-8
-#!/usr/bin/env python
+# coding:utf-8
+# !/usr/bin/env python
 #
 # Copyright 2009 The Closure Library Authors. All Rights Reserved.
 #
@@ -28,11 +28,14 @@ all JS files below a directory.
 usage: %prog [options] [file1.js file2.js ...]
 """
 import re
+import time
+
 from closure2amd import closure2amd
 import eos
 from legos import legos
 import util.svn
 import version.updater
+
 
 __author__ = 'nnaze@google.com (Nathan Naze)'
 
@@ -47,97 +50,100 @@ import jscompiler
 import source
 import treescan
 
+
 def _GetOptionsParser():
     """Get the options parser."""
 
     parser = optparse.OptionParser(__doc__)
     parser.add_option('-i',
-        '--input',
-        dest='inputs',
-        action='append',
-        default=[],
-        help='One or more input files to calculate dependencies '
-             'for.  The namespaces in this file will be combined with '
-             'those given with the -n flag to form the set of '
-             'namespaces to find dependencies for.')
+                      '--input',
+                      dest='inputs',
+                      action='append',
+                      default=[],
+                      help='One or more input files to calculate dependencies '
+                           'for.  The namespaces in this file will be combined with '
+                           'those given with the -n flag to form the set of '
+                           'namespaces to find dependencies for.')
     parser.add_option('-n',
-        '--namespace',
-        dest='namespaces',
-        action='append',
-        default=[],
-        help='One or more namespaces to calculate dependencies '
-             'for.  These namespaces will be combined with those given '
-             'with the -i flag to form the set of namespaces to find '
-             'dependencies for.  A Closure namespace is a '
-             'dot-delimited path expression declared with a call to '
-             'goog.provide() (e.g. "goog.array" or "foo.bar").')
+                      '--namespace',
+                      dest='namespaces',
+                      action='append',
+                      default=[],
+                      help='One or more namespaces to calculate dependencies '
+                           'for.  These namespaces will be combined with those given '
+                           'with the -i flag to form the set of namespaces to find '
+                           'dependencies for.  A Closure namespace is a '
+                           'dot-delimited path expression declared with a call to '
+                           'goog.provide() (e.g. "goog.array" or "foo.bar").')
     parser.add_option('--root',
-        dest='roots',
-        action='append',
-        default=[],
-        help='The paths that should be traversed to build the '
-             'dependencies.')
+                      dest='roots',
+                      action='append',
+                      default=[],
+                      help='The paths that should be traversed to build the '
+                           'dependencies.')
     parser.add_option('-o',
-        '--output_mode',
-        dest='output_mode',
-        type='choice',
-        action='store',
-        choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule', 'calcdepsIndependent',
-                 'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
-                 'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule', 'findModulesByModule',
-                 'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
-        default='list',
-        help='The type of output to generate from this script. '
-             'Options are "list" for a list of filenames, "script" '
-             'for a single script containing the contents of all the '
-             'files, or "compiled" to produce compiled output with '
-             'the Closure Compiler.  Default is "list".')
+                      '--output_mode',
+                      dest='output_mode',
+                      type='choice',
+                      action='store',
+                      choices=['list', 'script', 'compiled', 'compiledSimple', 'compiledSimpleByModule',
+                               'calcdepsIndependent',
+                               'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
+                               'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule',
+                               'findModulesByModule',
+                               'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
+                      default='list',
+                      help='The type of output to generate from this script. '
+                           'Options are "list" for a list of filenames, "script" '
+                           'for a single script containing the contents of all the '
+                           'files, or "compiled" to produce compiled output with '
+                           'the Closure Compiler.  Default is "list".')
     parser.add_option('-c',
-        '--compiler_jar',
-        dest='compiler_jar',
-        action='store',
-        help='The location of the Closure compiler .jar file.')
+                      '--compiler_jar',
+                      dest='compiler_jar',
+                      action='store',
+                      help='The location of the Closure compiler .jar file.')
     parser.add_option('-f',
-        '--compiler_flags',
-        dest='compiler_flags',
-        default=[],
-        action='append',
-        help='Additional flags to pass to the Closure compiler. '
-             'To pass multiple flags, --compiler_flags has to be '
-             'specified multiple times.')
+                      '--compiler_flags',
+                      dest='compiler_flags',
+                      default=[],
+                      action='append',
+                      help='Additional flags to pass to the Closure compiler. '
+                           'To pass multiple flags, --compiler_flags has to be '
+                           'specified multiple times.')
     parser.add_option('--output_file',
-        dest='output_file',
-        action='store',
-        help=('If specified, write output to this path instead of '
-              'writing to standard output.'))
+                      dest='output_file',
+                      action='store',
+                      help=('If specified, write output to this path instead of '
+                            'writing to standard output.'))
     parser.add_option('--root_with_prefix',
-        dest='root_with_prefix',
-        default=[],
-        action='store',
-        help='A root directory to scan for JS source files, plus '
-             'a prefix (if either contains a space, surround with '
-             'quotes).  Paths in generated deps file will be relative '
-             'to the root, but preceded by the prefix.')
+                      dest='root_with_prefix',
+                      default=[],
+                      action='store',
+                      help='A root directory to scan for JS source files, plus '
+                           'a prefix (if either contains a space, surround with '
+                           'quotes).  Paths in generated deps file will be relative '
+                           'to the root, but preceded by the prefix.')
     parser.add_option('--output_dir',
-        dest='output_dir',
-        action='store',
-        help=('dir of output file'))
+                      dest='output_dir',
+                      action='store',
+                      help=('dir of output file'))
 
     parser.add_option('--modulejs',
-        dest='modulejs',
-        action='store',
-        help=('path of modulejs'))
+                      dest='modulejs',
+                      action='store',
+                      help=('path of modulejs'))
 
     parser.add_option('--host',
-        dest='host',
-        action='store',
-        help=('host of modulejs'))
+                      dest='host',
+                      action='store',
+                      help=('host of modulejs'))
 
     parser.add_option('--eos',
-        dest='eos',
-        default=False,
-        action='store',
-        help=('if execute eos'))
+                      dest='eos',
+                      default=False,
+                      action='store',
+                      help=('if execute eos'))
 
     return parser
 
@@ -172,7 +178,7 @@ def _GetClosureBaseFile(sources):
       The _PathSource representing the base Closure file.
     """
     base_files = [
-    js_source for js_source in sources if _IsClosureBaseFile(js_source)]
+        js_source for js_source in sources if _IsClosureBaseFile(js_source)]
 
     if not base_files:
         logging.warning('No Closure base.js file found.')
@@ -241,7 +247,7 @@ class _PathSource(source.Source):
         return self._path
 
     def GetFlatName(self, moduleName):
-    #        return moduleName.replace(".", "$$$")
+        #        return moduleName.replace(".", "$$$")
         return ''
 
     def writeRequires(self, requiresAll):
@@ -256,7 +262,7 @@ class _PathSource(source.Source):
         requiresDirect = set()
         for moduleName in requiresAll:
             if re.search(r'(?<![\w\d\_\-@])' + (moduleName.replace(".", "\.")).replace("$", "\$") + r"(?![\w\d\_\-@])",
-                sourceRemoveComment):
+                         sourceRemoveComment):
                 sourceRemoveComment = sourceRemoveComment.replace(moduleName, self.GetFlatName(moduleName))
                 requiresDirect.add(moduleName)
 
@@ -402,7 +408,7 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
         out = open(minJs, "r")
         content = out.read()
         content = re.sub('var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '',
-            content)
+                         content)
         #将"goog.require(...);"移除
         content = re.sub('goog\.require\([^)]*\);', '', content)
         #将"goog.provide(...);"替换成"CP.util.namespace(...);"
@@ -427,7 +433,7 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
 
         if exeEos:
             util.svn.add(relPaths)
-            addEosMission(relPaths, minJs)
+        addEosMission(relPaths, minJs)
 
     return (minJs, htmlRealPaths)
 
@@ -442,14 +448,14 @@ def isEntryPointModule(namespace, source_map):
 
 def getEntryPointSourceMap(source_map):
     paths = sorted(source_map.keys())
-    source_map_noGoog = {}#非closure库模块
+    source_map_noGoog = {}  #非closure库模块
     for path in paths:
         js_source = source_map[path]
         if js_source.provides:
             namespace = js_source.provides.copy().pop()
             if (not (re.compile("^goog").match(namespace) or re.compile("^cp\.tpl").match(namespace))):
                 source_map_noGoog[path] = js_source
-    source_map_entryPoint = {}#入口模块
+    source_map_entryPoint = {}  #入口模块
     for path in source_map_noGoog.keys():
         js_source = source_map_noGoog[path]
         if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
@@ -464,7 +470,7 @@ def getRelPath(minJs, root):
 def convertToLegos(dep):
     modelName = dep.provides.copy().pop()
     if ((re.compile('goog\.cp')).match(modelName) or not (re.compile('goog')).match(modelName)) and not (
-        re.compile('^soy')).match(modelName):
+            re.compile('^soy')).match(modelName):
         amdCode, modelName = closure2amd.getAmdCodeBySource(dep)
         createRes = legos.createModule(pid='100', name=modelName, title=modelName, desc='', code=amdCode)
         if not createRes:
@@ -473,7 +479,7 @@ def convertToLegos(dep):
 
 def main():
     logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
-        level=logging.INFO)
+                        level=logging.INFO)
     options, args = _GetOptionsParser().parse_args()
 
     output_file = options.output_file
@@ -564,7 +570,7 @@ def main():
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
                 minJs, minJsExpired = compile(compiler_jar_path, [base] + tree.GetDependencies(namesapce),
-                    [dep.GetPath()], compiler_flags, roots[0])
+                                              [dep.GetPath()], compiler_flags, roots[0])
 
                 if minJs:
                     minJs = getRelPath(minJs, roots[0])
@@ -589,7 +595,7 @@ def main():
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
                 minJs, htmlPaths = compileSimple(compiler_jar_path, [base] + tree.GetDependencies(namesapce),
-                    [dep.GetPath()], compiler_flags, roots, False)
+                                                 [dep.GetPath()], compiler_flags, roots, False)
 
                 if minJs:
                     relPaths.append(minJs)
@@ -615,7 +621,7 @@ def main():
 
         for dep in sources:
             writeDepsFile([base] + tree.GetDependencies(dep.provides.copy().pop()), dep.provides, output_dir,
-                root_with_prefix)
+                          root_with_prefix)
     elif output_mode == 'convertToLegosByEntrypoint':
         for dep in deps:
             convertToLegos(dep)
@@ -627,5 +633,6 @@ def main():
 
 
 def addEosMission(filePaths, subject):
+    time.sleep(len(filePaths) * 5)
     eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject,
-        executors=['jinkerjiang'], middlePath='/html')
+                       executors=['jinkerjiang'], middlePath='/html')
