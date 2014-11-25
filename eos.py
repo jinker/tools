@@ -121,7 +121,7 @@ def doEosByApi(executors, fullPaths, module, subject, begin=1, end=2):
         'isexec': 'true'
     }
     headers = {
-        'Cookie': 'PHPSESSID=1gd1sri6c3rq880uj9oc0j8u31;'
+        'Cookie': 'PHPSESSID=gkp5fts9sgsjqflpkl2tkgv2h7;'
     }
     conn = httplib.HTTPConnection("vtools.oa.com", 80)
     conn.request("POST", "/dsrm.php/eos/addMission?" + urllib.urlencode(body), "", headers)

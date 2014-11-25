@@ -499,7 +499,6 @@ def main():
     else:
         out = sys.stdout
 
-    logging.info(args)
     sources = getSources(roots, args)
 
     # Though deps output doesn't need to query the tree, we still build it
