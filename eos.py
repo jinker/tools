@@ -42,6 +42,18 @@ def _GetOptionsParser():
                       action='store',
                       help='subject')
 
+    parser.add_option('--begin',
+                      dest='begin',
+                      action='store',
+                      default=1,
+                      help='env begin')
+
+    parser.add_option('--end',
+                      dest='end',
+                      action='store',
+                      default=2,
+                      help='env end')
+
     return parser
 
 
@@ -130,6 +142,8 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(message)s', level=logging.info)
     options, args = _GetOptionsParser().parse_args()
     options_type = options.type
+    begin = options.begin
+    end = options.end
 
     filePaths = []
     subject = ''
@@ -174,4 +188,4 @@ if __name__ == "__main__":
             filePaths.append(fileRelPath.replace("\\", "/"))
 
     addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()],
-                   middlePath=middlePath)
+                   middlePath=middlePath, begin=begin, end=end)
