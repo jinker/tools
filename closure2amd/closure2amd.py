@@ -52,6 +52,7 @@ def getAmdCodeBySource(s):
                 else:
                     textRes += '\nvar $ = require("{jquery}");'
                     textRes += '\nvar jQuery = $;'
+                    textRes += '\nvar cp_$ = $;'
             else:
                 if not source.isComment(line):
                     for name in names:

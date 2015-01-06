@@ -12,9 +12,11 @@ __author__ = 'jinkerjiang'
 MODULE_BOCAI_HOME = '315'
 MODULE_vb2c_lottery = '166'
 
+
 MODULE_PATH_PREFIX_MAP = {
-    MODULE_BOCAI_HOME: '/data/eos/dev/dist/bocai_home',
-    MODULE_vb2c_lottery: '/data/eos/dev/dist/vb2c_lottery'
+    #/data/eos/dev/dist
+    MODULE_BOCAI_HOME: '/bocai_home',
+    MODULE_vb2c_lottery: '/vb2c_lottery'
 }
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
@@ -121,7 +123,7 @@ def doEosByApi(executors, fullPaths, module, subject, begin=1, end=2):
         'isexec': 'true'
     }
     headers = {
-        'Cookie': 'PHPSESSID=gkp5fts9sgsjqflpkl2tkgv2h7;'
+        'Cookie': 'PHPSESSID=i6le63ru6umm55crtph0tba4i7;'
     }
     conn = httplib.HTTPConnection("vtools.oa.com", 80)
     conn.request("POST", "/dsrm.php/eos/addMission?" + urllib.urlencode(body), "", headers)

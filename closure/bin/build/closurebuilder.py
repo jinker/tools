@@ -7,7 +7,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS-IS" BASIS,
@@ -91,7 +91,8 @@ def _GetOptionsParser():
                                'calcdepsIndependentDetail', 'calcAndOrganizeDepsIndependent',
                                'genModuleJsEntryPoint', 'compiledByModule', 'findEntriesByModule',
                                'findModulesByModule',
-                               'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos'],
+                               'calcdepsIndependentByModule', 'convertToLegosByEntrypoint', 'convertToLegos',
+                               'pubDeps2Eos'],
                       default='list',
                       help='The type of output to generate from this script. '
                            'Options are "list" for a list of filenames, "script" '
@@ -183,7 +184,7 @@ def _GetClosureBaseFile(sources):
     if not base_files:
         logging.warning('No Closure base.js file found.')
         return None
-        #        sys.exit(1)
+        # sys.exit(1)
     if len(base_files) > 1:
         logging.error('More than one Closure base.js files found at these paths:')
         for base_file in base_files:
@@ -221,7 +222,7 @@ def _GetPair(s):
     """Return a string as a shell-parsed tuple.  Two values expected."""
     try:
         # shlex uses '\' as an escape character, so they must be escaped.
-        #s = s.replace('\\', '\\\\')
+        # s = s.replace('\\', '\\\\')
         first, second = s.split('*')
         return (first, second)
     except:
@@ -247,12 +248,12 @@ class _PathSource(source.Source):
         return self._path
 
     def GetFlatName(self, moduleName):
-        #        return moduleName.replace(".", "$$$")
+        # return moduleName.replace(".", "$$$")
         return ''
 
     def writeRequires(self, requiresAll):
         sourceRemoveComment = self._source
-        #remove old requires
+        # remove old requires
         sourceRemoveComment = source._REQUIRES_REGEX_LINE.sub('', sourceRemoveComment)
         sourceRemoveComment = source._PROVIDE_REGEX_LINE.sub('', sourceRemoveComment)
         sourceRemoveComment = source.Source._StripComments(sourceRemoveComment)
@@ -273,10 +274,10 @@ class _PathSource(source.Source):
             except Exception:
                 pass
 
-                #        requiresDirect.difference(self.requires)
+                # requiresDirect.difference(self.requires)
         if requiresDirect.difference(self.requires):
             requiresDirect = sorted(requiresDirect)
-            #update requires
+            # update requires
             self.requires = requiresDirect
 
             requireStatement = 'goog.require("%s");'
@@ -317,7 +318,7 @@ def writeDepsFile(deps, input_namespaces, outputDir, rootWithPrefix):
 
 
 def calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with_prefix, sources):
-    #exclude closure module
+    # exclude closure module
     depsExcludeClosure = []
     providesExcludeClosure = set()
     for source in sources:
@@ -333,7 +334,7 @@ def calcAndOrganizeDepsIndependent(deps, input_namespaces, output_dir, root_with
 
 
 def genModuleJsEntryPoint(deps, input_namespaces, modulejs, output_dir, root_with_prefix, host):
-    #genernate modulejs entrypoint file
+    # genernate modulejs entrypoint file
     entryModule = input_namespaces.pop()
     entrypoint_js = entryModule + ".entrypoint.js"
 
@@ -409,11 +410,11 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
         content = out.read()
         content = re.sub('var COMPILED=false;[\s\S]*goog\.scope=function\(fn\)\{fn\.call\(goog\.global\)\};', '',
                          content)
-        #将"goog.require(...);"移除
+        # 将"goog.require(...);"移除
         content = re.sub('goog\.require\([^)]*\);', '', content)
-        #将"goog.provide(...);"替换成"CP.util.namespace(...);"
+        # 将"goog.provide(...);"替换成"CP.util.namespace(...);"
         content = re.sub('goog\.provide', 'CP.util.namespace', content)
-        #避免CP命名覆盖问题
+        # 避免CP命名覆盖问题
         content = re.sub('var CP=\{(\w+):(\{[^}]*\})\}', 'var CP=CP||{};CP.\1={}', content)
 
         util.svn.lock(minJs)
@@ -448,14 +449,14 @@ def isEntryPointModule(namespace, source_map):
 
 def getEntryPointSourceMap(source_map):
     paths = sorted(source_map.keys())
-    source_map_noGoog = {}  #非closure库模块
+    source_map_noGoog = {}  # 非closure库模块
     for path in paths:
         js_source = source_map[path]
         if js_source.provides:
             namespace = js_source.provides.copy().pop()
             if (not (re.compile("^goog").match(namespace) or re.compile("^cp\.tpl").match(namespace))):
                 source_map_noGoog[path] = js_source
-    source_map_entryPoint = {}  #入口模块
+    source_map_entryPoint = {}  # 入口模块
     for path in source_map_noGoog.keys():
         js_source = source_map_noGoog[path]
         if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
@@ -626,12 +627,19 @@ def main():
             convertToLegos(dep)
     elif output_mode == 'convertToLegos':
         convertToLegos(_PathSource(inputs[0]))
+    elif output_mode == 'pubDeps2Eos':
+        relPaths = []
+        for dep in deps:
+            relPaths.append(getRelPath(dep.GetPath(), roots[0]))
+
+        addEosMission(relPaths, 'deps for : ' + input_namespaces.copy().pop(), False)
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
 
 
-def addEosMission(filePaths, subject):
-    time.sleep(len(filePaths) * 5)
+def addEosMission(filePaths, subject, wait=True):
+    if wait:
+        time.sleep(len(filePaths) * 5)
     eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject,
                        executors=['jinkerjiang'], middlePath='/html')
