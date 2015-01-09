@@ -33,6 +33,7 @@ import time
 from closure2amd import closure2amd
 import eos
 from legos import legos
+from util import svn
 import util.svn
 import version.updater
 
@@ -421,20 +422,17 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
         out = open(minJs, "w")
         out.write(content)
 
-        minJs = getRelPath(minJs, roots[0])
         minJsExpired = getRelPath(minJsExpired, roots[0])
-        htmlPaths = version.updater.update(minJs, roots, minJsExpired)
+        htmlPaths = version.updater.update(getRelPath(minJs, roots[0]), roots, minJsExpired)
         htmlRealPaths = []
 
-        relPaths = [minJs]
+        paths = [minJs]
         for path in htmlPaths:
-            rel_path = getRelPath(path, roots[0])
-            htmlRealPaths.append(rel_path)
-            relPaths.append(rel_path)
+            htmlRealPaths.append(path)
+            paths.append(path)
 
         if exeEos:
-            util.svn.add(relPaths)
-        addEosMission(relPaths, minJs)
+            addEosMission(paths, minJs, roots[0])
 
     return (minJs, htmlRealPaths)
 
@@ -548,24 +546,22 @@ def main():
         minJs, minJsExpired = compile(compiler_jar_path, deps, inputs, compiler_flags, roots[0])
 
         if minJs:
-            minJs = getRelPath(minJs, roots[0])
             minJsExpired = getRelPath(minJsExpired, roots[0])
-            htmlPaths = version.updater.update(minJs, roots, minJsExpired)
+            htmlPaths = version.updater.update(getRelPath(minJs, roots[0]), roots, minJsExpired)
 
-            relPaths = [minJs]
+            paths = [minJs]
             for path in htmlPaths:
-                relPaths.append(getRelPath(path, roots[0]))
+                paths.append(path)
 
             if options.eos:
-                util.svn.add(relPaths)
-                addEosMission(relPaths, minJs)
+                addEosMission(paths, minJs, roots[0])
         else:
             sys.exit(1)
     elif output_mode == 'compiledByModule':
         namespaceTarget = input_namespaces.copy().pop()
         sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)
 
-        relPaths = []
+        paths = []
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
@@ -573,24 +569,22 @@ def main():
                                               [dep.GetPath()], compiler_flags, roots[0])
 
                 if minJs:
-                    minJs = getRelPath(minJs, roots[0])
                     minJsExpired = getRelPath(minJsExpired, roots[0])
-                    htmlPaths = version.updater.update(minJs, roots, minJsExpired)
+                    htmlPaths = version.updater.update(getRelPath(minJs, roots[0]), roots, minJsExpired)
 
-                    relPaths.append(minJs)
+                    paths.append(minJs)
                     for path in htmlPaths:
-                        relPaths.append(getRelPath(path, roots[0]))
+                        paths.append(path)
 
         if options.eos:
-            util.svn.add(relPaths)
-            addEosMission(relPaths, namespaceTarget)
+            addEosMission(paths, namespaceTarget, roots[0])
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
     elif output_mode == 'compiledSimpleByModule':
         namespaceTarget = input_namespaces.copy().pop()
         sources = tree.GetLeafSourcesByNameSpace(namespaceTarget)
 
-        relPaths = []
+        paths = []
         for dep in sources:
             namesapce = dep.provides.copy().pop()
             if not re.compile("^test").match(namesapce):
@@ -598,13 +592,12 @@ def main():
                                                  [dep.GetPath()], compiler_flags, roots, False)
 
                 if minJs:
-                    relPaths.append(minJs)
+                    paths.append(minJs)
                     for path in htmlPaths:
-                        relPaths.append(path)
+                        paths.append(path)
 
         if options.eos:
-            util.svn.add(relPaths)
-            addEosMission(relPaths, namespaceTarget)
+            addEosMission(paths, namespaceTarget, roots[0])
     elif output_mode == 'findEntriesByModule':
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
@@ -628,18 +621,25 @@ def main():
     elif output_mode == 'convertToLegos':
         convertToLegos(_PathSource(inputs[0]))
     elif output_mode == 'pubDeps2Eos':
-        relPaths = []
+        absPaths = []
         for dep in deps:
-            relPaths.append(getRelPath(dep.GetPath(), roots[0]))
+            path = dep.GetPath()
+            absPaths.append(path)
 
-        addEosMission(relPaths, 'deps for : ' + input_namespaces.copy().pop(), False)
+        addEosMission(absPaths, 'deps for : ' + input_namespaces.copy().pop(), roots[0], False)
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
 
 
-def addEosMission(filePaths, subject, wait=True):
+def addEosMission(filePaths, subject, projectPath, wait=True):
+    relPaths = []
+    for path in filePaths:
+        relPaths.append(getRelPath(path, projectPath))
+
+    svn.commit(filePaths)
+
     if wait:
         time.sleep(len(filePaths) * 5)
-    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=filePaths, subject=subject,
-                       executors=['jinkerjiang'], middlePath='/html')
+    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=relPaths, subject=subject,
+                       executors=['jinkerjiang'], middlePath='/html', filePathsAbs=filePaths)

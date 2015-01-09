@@ -4,7 +4,7 @@ import logging
 import optparse
 import urllib
 
-from util import inputUtil, authUtil
+from util import inputUtil, authUtil, svn
 
 
 __author__ = 'jinkerjiang'
@@ -12,9 +12,8 @@ __author__ = 'jinkerjiang'
 MODULE_BOCAI_HOME = '315'
 MODULE_vb2c_lottery = '166'
 
-
 MODULE_PATH_PREFIX_MAP = {
-    #/data/eos/dev/dist
+    # /data/eos/dev/dist
     MODULE_BOCAI_HOME: '/bocai_home',
     MODULE_vb2c_lottery: '/vb2c_lottery'
 }
@@ -39,6 +38,11 @@ def _GetOptionsParser():
                       action='append',
                       help='file relative path')
 
+    parser.add_option('--filePathAbs',
+                      dest='filePathsAbs',
+                      action='append',
+                      help='file abs path')
+
     parser.add_option('--subject',
                       dest='subject',
                       action='store',
@@ -59,7 +63,10 @@ def _GetOptionsParser():
     return parser
 
 
-def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None, begin=1, end=2):
+def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None, begin=1, end=2, filePathsAbs=[]):
+    if filePathsAbs and len(filePathsAbs) > 0:
+        svn.commit(filePathsAbs)
+
     if module:
         pathPrefix = MODULE_PATH_PREFIX_MAP[module]
     else:
@@ -152,6 +159,8 @@ if __name__ == "__main__":
     module = MODULE_BOCAI_HOME
     middlePath = ''
 
+    filePathsAbs = options.filePathsAbs
+
     if options_type == 'pathFromCmd':
         filePaths = options.fileRelativePaths
         subject = options.subject
@@ -190,4 +199,4 @@ if __name__ == "__main__":
             filePaths.append(fileRelPath.replace("\\", "/"))
 
     addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()],
-                   middlePath=middlePath, begin=begin, end=end)
+                   middlePath=middlePath, begin=begin, end=end, filePathsAbs=filePathsAbs)
