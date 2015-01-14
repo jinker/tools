@@ -63,22 +63,23 @@ def _GetOptionsParser():
     return parser
 
 
-def addMissionTask(module, fileRelativePaths, subject, executors, middlePath=None, begin=1, end=2, filePathsAbs=[]):
+def add_eos_mission(module, file_relative_paths, subject, executors, middle_path=None, begin=1, end=2, filePathsAbs=[],
+                    project_path=None):
     if filePathsAbs and len(filePathsAbs) > 0:
-        svn.commit(filePathsAbs)
+        svn.try_commit(filePathsAbs, cwd=project_path)
 
     if module:
-        pathPrefix = MODULE_PATH_PREFIX_MAP[module]
+        path_prefix = MODULE_PATH_PREFIX_MAP[module]
     else:
-        pathPrefix = ''
-    fullPaths = []
+        path_prefix = ''
+    full_paths = []
 
-    if not middlePath:
-        middlePath = ''
-    for relPath in fileRelativePaths:
-        fullPaths.append(pathPrefix + middlePath + relPath)
+    if not middle_path:
+        middle_path = ''
+    for relPath in file_relative_paths:
+        full_paths.append(path_prefix + middle_path + relPath)
 
-    return doEosByApi(executors, fullPaths, module, subject, begin, end)
+    return doEosByApi(executors, full_paths, module, subject, begin, end)
 
 
 def doEos(executors, fullPaths, module, subject, begin, end):
@@ -198,5 +199,5 @@ if __name__ == "__main__":
         for fileRelPath in filePathsRaw:
             filePaths.append(fileRelPath.replace("\\", "/"))
 
-    addMissionTask(module=module, fileRelativePaths=filePaths, subject=subject, executors=[authUtil.getUserName()],
-                   middlePath=middlePath, begin=begin, end=end, filePathsAbs=filePathsAbs)
+    add_eos_mission(module=module, file_relative_paths=filePaths, subject=subject, executors=[authUtil.getUserName()],
+                    middle_path=middlePath, begin=begin, end=end, filePathsAbs=filePathsAbs)

@@ -432,7 +432,7 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
             paths.append(path)
 
         if exeEos:
-            addEosMission(paths, minJs, roots[0])
+            add_eos_mission(paths, minJs, roots[0])
 
     return (minJs, htmlRealPaths)
 
@@ -554,7 +554,7 @@ def main():
                 paths.append(path)
 
             if options.eos:
-                addEosMission(paths, minJs, roots[0])
+                add_eos_mission(paths, minJs, roots[0])
         else:
             sys.exit(1)
     elif output_mode == 'compiledByModule':
@@ -577,7 +577,7 @@ def main():
                         paths.append(path)
 
         if options.eos:
-            addEosMission(paths, namespaceTarget, roots[0])
+            add_eos_mission(paths, namespaceTarget, roots[0])
     elif output_mode == 'compiledSimple':
         compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, options.eos)
     elif output_mode == 'compiledSimpleByModule':
@@ -597,7 +597,7 @@ def main():
                         paths.append(path)
 
         if options.eos:
-            addEosMission(paths, namespaceTarget, roots[0])
+            add_eos_mission(paths, namespaceTarget, roots[0])
     elif output_mode == 'findEntriesByModule':
         sources = tree.GetLeafSourcesByNameSpace(input_namespaces.copy().pop())
 
@@ -626,20 +626,19 @@ def main():
             path = dep.GetPath()
             absPaths.append(path)
 
-        addEosMission(absPaths, 'deps for : ' + input_namespaces.copy().pop(), roots[0], False)
+        add_eos_mission(absPaths, 'deps for : ' + input_namespaces.copy().pop(), roots[0], False)
     else:
         logging.error('Invalid value for --output flag.')
     sys.exit(2)
 
 
-def addEosMission(filePaths, subject, projectPath, wait=True):
-    relPaths = []
-    for path in filePaths:
-        relPaths.append(getRelPath(path, projectPath))
-
-    svn.commit(filePaths)
+def add_eos_mission(file_paths, subject, project_path, wait=True):
+    rel_paths = []
+    for path in file_paths:
+        rel_paths.append(getRelPath(path, project_path))
 
     if wait:
-        time.sleep(len(filePaths) * 5)
-    eos.addMissionTask(module=eos.MODULE_BOCAI_HOME, fileRelativePaths=relPaths, subject=subject,
-                       executors=['jinkerjiang'], middlePath='/html', filePathsAbs=filePaths)
+        time.sleep(len(file_paths) * 5)
+    eos.add_eos_mission(module=eos.MODULE_BOCAI_HOME, file_relative_paths=rel_paths, subject=subject,
+                        executors=['jinkerjiang'], middle_path='/html', filePathsAbs=file_paths,
+                        project_path=project_path)
