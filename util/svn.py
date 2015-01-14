@@ -86,12 +86,8 @@ def try_commit(paths, msg='modify', cwd=None):
         commit(commit_paths, msg, show_log=True, cwd=cwd)
 
 
-def isUnderVersionAndLocked(path):
-    pass
-
-
 if __name__ == '__main__':
     p = '/Users/jinkerjiang/workspace/lottery_proj/bocai/static/v1.0/i/lib/util.js'
     # status(path)
 
-    print is_modified(p)
+    is_modified(p)

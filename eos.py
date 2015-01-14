@@ -79,14 +79,14 @@ def add_eos_mission(module, file_relative_paths, subject, executors, middle_path
     for relPath in file_relative_paths:
         full_paths.append(path_prefix + middle_path + relPath)
 
-    return doEosByApi(executors, full_paths, module, subject, begin, end)
+    return do_eos_by_api(executors, full_paths, module, subject, begin, end)
 
 
-def doEos(executors, fullPaths, module, subject, begin, end):
-    Files = []
+def do_eos(executors, full_paths, module, subject, begin, end):
+    files = []
 
-    for path in fullPaths:
-        Files.append(module + ';' + path + ';;')
+    for path in full_paths:
+        files.append(module + ';' + path + ';;')
 
     logging.info("EOS add mission task...")
     body = {
@@ -96,7 +96,7 @@ def doEos(executors, fullPaths, module, subject, begin, end):
         'ExtExecuter': '',
         'Modules': module,
         'Desc': '',
-        'Files': ','.join(Files),
+        'Files': ','.join(files),
         'Subject': subject,
         'BEnv': '15',
         'TapdId': '',
@@ -112,19 +112,19 @@ def doEos(executors, fullPaths, module, subject, begin, end):
     conn = httplib.HTTPConnection("t.ecc.com")
     conn.request("POST", "/eos/api.ajax.php?act=addMissionTask", urllib.urlencode(body), headers)
     response = conn.getresponse()
-    responseText = response.read()
+    response_text = response.read()
     conn.close()
-    res = 'ok' == responseText
+    res = 'ok' == response_text
     logging.info("\tresult:" + str(res))
     return res
 
 
-def doEosByApi(executors, fullPaths, module, subject, begin=1, end=2):
+def do_eos_by_api(executors, full_paths, module, subject, begin=1, end=2):
     logging.info("EOS add mission task...")
 
     body = {
         'exeuser': ';'.join(executors),
-        'files': ','.join(fullPaths),
+        'files': ','.join(full_paths),
         'subject': subject,
         'benv': begin,
         'eenv': end,
@@ -136,14 +136,14 @@ def doEosByApi(executors, fullPaths, module, subject, begin=1, end=2):
     conn = httplib.HTTPConnection("vtools.oa.com", 80)
     conn.request("POST", "/dsrm.php/eos/addMission?" + urllib.urlencode(body), "", headers)
     response = conn.getresponse()
-    responseText = response.read()
+    response_text = response.read()
     conn.close()
-    res = '发布任务创建成功，请登录Eos执行。' == responseText
+    res = '发布任务创建成功，请登录Eos执行。' == response_text
     try:
-        responseText = responseText.decode('utf-8').encode('gb2312')
+        response_text = response_text.decode('utf-8').encode('gb2312')
     except Exception:
         pass
-    logging.info(responseText)
+    logging.info(response_text)
     logging.info("\tresult:" + str(res))
     return res
 
