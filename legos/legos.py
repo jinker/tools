@@ -18,7 +18,7 @@ def postLegos(body, url):
         'pragma': 'no-cache',
         'Origin': 'http://legos.cm.com',
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': 'oaname=' + authUtil.getUserName()
+        'Cookie': 'oaname=' + authUtil.get_user_name()
     }
     conn = httplib.HTTPConnection("legos.cm.com")
     conn.request("POST", url, urllib.urlencode(body), headers)

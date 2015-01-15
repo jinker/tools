@@ -199,5 +199,5 @@ if __name__ == "__main__":
         for fileRelPath in filePathsRaw:
             filePaths.append(fileRelPath.replace("\\", "/"))
 
-    add_eos_mission(module=module, file_relative_paths=filePaths, subject=subject, executors=[authUtil.getUserName()],
+    add_eos_mission(module=module, file_relative_paths=filePaths, subject=subject, executors=[authUtil.get_user_name()],
                     middle_path=middlePath, begin=begin, end=end, filePathsAbs=filePathsAbs)

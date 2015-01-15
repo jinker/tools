@@ -9,5 +9,5 @@ dir = re.sub(r'/[^/]*$', '', dir)
 settings = json.loads(open(dir + '/../setting.json').read())
 
 
-def getUserName():
+def get_user_name():
     return settings['userName']
