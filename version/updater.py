@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 from util import svn
 
 __author__ = 'jinker'
@@ -14,6 +14,7 @@ import os
 
 BASE_BUILD_DIR = "/static/build"
 
+
 class FileConfig(object):
     _SUFFIX_MAP = {}
 
@@ -25,17 +26,18 @@ class FileConfig(object):
             config = {}
         return config
 
-    def __init__(self, fileSuffix, fileSearchFilter, regStrSet ):
+    def __init__(self, fileSuffix, fileSearchFilter, regStrSet):
         self.fileSuffix = fileSuffix
         self.fileSearchFilter = fileSearchFilter
         self.regStrSet = regStrSet
         self._SUFFIX_MAP[fileSuffix] = self
 
+
 BASE_REG_STRING_SCRIPT = ['(<script[^>]*src=[\'"])([^>]*%s)[^\'"]*([\'"][^>]*></script>)']
 BASE_REG_STRING_CSS = ['(<link[^>]*href=[\'"])([^>]*%s)[^\'">]*([\'"][^>]*/?>)']
 BASE_REG_STR_IMG = [
-    '(background:[^}]*url\([\'"]?[^\)]*%s)[^\)\'"]*([\'"]?\))', # background:url()
-    '(background-image:[\s]*[^;]*%s)[^;)]*([^;];)', # background-image:url() || background-image:
+    '(background:[^}]*url\([\'"]?[^\)]*%s)[^\)\'"]*([\'"]?\))',  # background:url()
+    '(background-image:[\s]*[^;]*%s)[^;)]*([^;];)',  # background-image:url() || background-image:
     '(<img[^>]*src=[\'"][^>]*%s)[^\'">]*([\'"][^>]*/?>)'  # <img src="" />
 ]
 
@@ -55,27 +57,28 @@ SOFT_LINKS_REL_DIR_MAP = {
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
+
 def _GetOptionsParser():
     """Get the options parser."""
 
     parser = optparse.OptionParser(__doc__)
 
     parser.add_option('--basePath',
-        dest='basePath',
-        action='store',
-        help='web base path')
+                      dest='basePath',
+                      action='store',
+                      help='web base path')
 
     parser.add_option('--root',
-        dest='roots',
-        action='append',
-        default=[],
-        help='The paths that should be traversed to build the '
-             'dependencies.')
+                      dest='roots',
+                      action='append',
+                      default=[],
+                      help='The paths that should be traversed to build the '
+                           'dependencies.')
 
     parser.add_option('--filePath',
-        dest='filePath',
-        action='store',
-        help='js or css file path')
+                      dest='filePath',
+                      action='store',
+                      help='js or css file path')
 
     return parser
 
@@ -108,7 +111,7 @@ def updateVersionByPaths(contentFilePath, regStrArr, fileRelPaths, versionStr):
                 result = 1
 
     if result:
-        svn.lock(contentFilePath)
+        svn.try_lock(contentFilePath)
         fileObjW = open(contentFilePath, "w")
         fileObjW.write(content)
         fileObjW.close()
@@ -133,7 +136,7 @@ def updateVersionByPathsNew(contentFilePath, regStrArr, fileRelPaths, filePathNe
                 result = 1
 
     if result:
-        svn.lock(contentFilePath)
+        svn.try_lock(contentFilePath)
         fileObjW = open(contentFilePath, "w")
         fileObjW.write(content)
         fileObjW.close()
@@ -143,13 +146,13 @@ def updateVersionByPathsNew(contentFilePath, regStrArr, fileRelPaths, filePathNe
     return result
 
 
-def getTimeStampAndRelativePath():
-    fromtimestamp = datetime.datetime.fromtimestamp(time.time())
-    return (fromtimestamp.strftime('%Y%m%d%H%M'), '/' + fromtimestamp.strftime('%Y%m'))
+def get_time_stamp_and_relative_path():
+    from_time_stamp = datetime.datetime.fromtimestamp(time.time())
+    return (from_time_stamp.strftime('%Y%m%d%H%M'), '/' + from_time_stamp.strftime('%Y%m'))
 
 
-def update(filePath, roots, filePathExpired=None):
-    #判断是否使用行的版本管理策略
+def update(filePath, roots, file_path_expired=None):
+    # 判断是否使用行的版本管理策略
     reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.c\.min\.js)$")
     reg_match = reg.match(filePath)
     if reg_match:
@@ -164,18 +167,17 @@ def update(filePath, roots, filePathExpired=None):
 
         filePaths = set()
         filePaths.add(filePathPattern)
-        filePaths.add(filePathExpired)
+        filePaths.add(file_path_expired)
         for dir in SOFT_LINKS_REL_DIR_MAP.keys():
             softLinkReg = re.compile("^" + dir)
             if softLinkReg.match(filePath):
                 filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePath))
                 break
-            if softLinkReg.match(filePathExpired):
-                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePathExpired))
+            if softLinkReg.match(file_path_expired):
+                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), file_path_expired))
                 break
 
-        timestamp = getTimeStampAndRelativePath()[0]
-        logging.info("The new version : " + timestamp)
+        logging.info("The version : " + reg_match.group(4))
 
         logging.info('Scanning paths...')
         paths = set()
@@ -223,7 +225,7 @@ def updateOld(filePath, roots):
             filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePath))
             break
 
-    timestamp = getTimeStampAndRelativePath()[0]
+    timestamp = get_time_stamp_and_relative_path()[0]
     logging.info("The new version : " + timestamp)
 
     logging.info('Scanning paths...')
@@ -263,8 +265,9 @@ def main():
 
     sys.exit(0)
 
+
 if __name__ == '__main__':
-#    main()
+    # main()
     path = '/static/build/201407/cp_jczq_all.201407311647.c.min.js'
     reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.c\.min\.js)$")
     reg_match = reg.match(path)

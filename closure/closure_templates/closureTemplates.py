@@ -30,7 +30,7 @@ def compileTemplate(inputs, outputPathFormat):
     for input in inputs:
         output_path = getOutputPath(input, outputPathFormat)
         outputPaths.append(output_path)
-        svn.lock(output_path)
+        svn.try_lock(output_path)
     args = [
         'java',
         '-jar', os.path.dirname(__file__) + '/SoyToJsSrcCompiler.jar',

@@ -43,7 +43,7 @@ def Compile(input, output=None, flags=None):
         path_splitext = os.path.splitext(input)
         output = path_splitext[0] + ".min" + path_splitext[1]
 
-    svn.lock(output)
+    svn.try_lock(output)
 
     args = ['java', '-jar', os.path.dirname(__file__) + '/lib/yuicompressor-2.4.7.jar', input, '--charset', 'gb2312', '-o', output]
 

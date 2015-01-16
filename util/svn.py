@@ -10,13 +10,17 @@ __author__ = 'jinkerjiang'
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
-def lock(path, force=True, show_log=True):
+def lock(force, path, show_log):
+    cmd_str = "svn lock"
+    if force:
+        cmd_str += ' --force'
+    cmd_str += ' ' + path
+    command.run(cmd_str, show_log=show_log)
+
+
+def try_lock(path, force=True, show_log=True):
     if os.path.exists(path):
-        cmd_str = "svn lock"
-        if force:
-            cmd_str += ' --force'
-        cmd_str += ' ' + path
-        command.run(cmd_str, show_log=show_log)
+        lock(force, path, show_log)
     return True
 
 
