@@ -77,7 +77,9 @@ def add_eos_mission(module, file_relative_paths, subject, executors, middle_path
     if not middle_path:
         middle_path = ''
     for relPath in file_relative_paths:
-        full_paths.append(path_prefix + middle_path + relPath)
+        path = path_prefix + middle_path + relPath
+        path = path.replace('\\', '/')
+        full_paths.append(path)
 
     return do_eos_by_api(executors, full_paths, module, subject, begin, end)
 
@@ -168,11 +170,7 @@ if __name__ == "__main__":
         middlePath = '/html'
     elif options_type == 'pathFromInput':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
-        fileRelPathsRaw = inputUtil.raw_input_multi_line()
-
-        filePaths = []
-        for fileRelPath in fileRelPathsRaw:
-            filePaths.append(fileRelPath.replace("\\", "/"))
+        filePaths = inputUtil.raw_input_multi_line()
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         middlePath = '/html'
@@ -182,22 +180,21 @@ if __name__ == "__main__":
         middlePath = '/web_app'
     elif options_type == 'pathFromInputPhp':
         logging.info("Please input file relative path(multiple split by semicolon): \n")
-        fileRelPathsRaw = inputUtil.raw_input_multi_line()
-
-        filePaths = []
-        for fileRelPath in fileRelPathsRaw:
-            filePaths.append(fileRelPath.replace("\\", "/"))
+        filePaths = inputUtil.raw_input_multi_line()
 
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         middlePath = '/web_app'
     else:
         logging.info("Please input file relative path(multiple split by semicolon): \n")
-        filePathsRaw = inputUtil.raw_input_multi_line()
+        filePaths = inputUtil.raw_input_multi_line()
         subject = raw_input("Please input subject: \n").replace("\\", "/")
         module = raw_input("Please input module: \n")
 
-        for fileRelPath in filePathsRaw:
-            filePaths.append(fileRelPath.replace("\\", "/"))
+    paths = []
+    for fileRelPath in filePaths:
+        paths.append(fileRelPath.replace("\\", "/"))
 
-    add_eos_mission(module=module, file_relative_paths=filePaths, subject=subject, executors=[authUtil.get_user_name()],
+    subject = subject.replace("\\", "/")
+
+    add_eos_mission(module=module, file_relative_paths=paths, subject=subject, executors=[authUtil.get_user_name()],
                     middle_path=middlePath, begin=begin, end=end, filePathsAbs=filePathsAbs)
