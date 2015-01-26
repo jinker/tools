@@ -152,8 +152,6 @@ def get_time_stamp_and_relative_path():
 
 
 def update(file_path, roots, file_path_expired=None):
-    logging.info(file_path)
-    logging.info(file_path_expired)
     # 判断是否使用行的版本管理策略
     reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.?\w?\.min\.\w+)$")
     reg_match = reg.match(file_path)
