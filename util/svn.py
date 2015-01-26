@@ -31,7 +31,7 @@ def add(paths, show_log=False):
 def commit(paths, msg, show_log=False, cwd=None):
     changelist = "my-changelist-" + str(time())
     command.run("svn changelist " + changelist + " " + " ".join(paths), show_log=show_log)
-    cmd_str = "svn commit"
+    cmd_str = "svn commit --no-unlock"
     if msg:
         cmd_str += " -m \"" + msg + "\""
     cmd_str += " --changelist " + changelist
