@@ -151,27 +151,29 @@ def get_time_stamp_and_relative_path():
     return (from_time_stamp.strftime('%Y%m%d%H%M'), '/' + from_time_stamp.strftime('%Y%m'))
 
 
-def update(filePath, roots, file_path_expired=None):
+def update(file_path, roots, file_path_expired=None):
+    logging.info(file_path)
+    logging.info(file_path_expired)
     # 判断是否使用行的版本管理策略
-    reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.c\.min\.js)$")
-    reg_match = reg.match(filePath)
+    reg = re.compile("(.*" + BASE_BUILD_DIR + "/)(\d+)(/.+\.)(\d+)(\.?\w?\.min\.\w+)$")
+    reg_match = reg.match(file_path)
     if reg_match:
-        filePathPattern = reg_match.group(1) + '\d+' + reg_match.group(3) + '\d+' + reg_match.group(5)
+        file_path_pattern = reg_match.group(1) + '\d+' + reg_match.group(3) + '\d+' + reg_match.group(5)
 
-        fileType = os.path.splitext(filePath)[1]
-        fileConfig = FileConfig.getConfig(fileType)
+        file_type = os.path.splitext(file_path)[1]
+        file_config = FileConfig.getConfig(file_type)
 
-        if not fileConfig or not fileConfig.regStrSet:
-            logging.warn("File type not supported yet : " + fileType)
+        if not file_config or not file_config.regStrSet:
+            logging.warn("File type not supported yet : " + file_type)
             return
 
         filePaths = set()
-        filePaths.add(filePathPattern)
+        filePaths.add(file_path_pattern)
         filePaths.add(file_path_expired)
         for dir in SOFT_LINKS_REL_DIR_MAP.keys():
             softLinkReg = re.compile("^" + dir)
-            if softLinkReg.match(filePath):
-                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), filePath))
+            if softLinkReg.match(file_path):
+                filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), file_path))
                 break
             if softLinkReg.match(file_path_expired):
                 filePaths.add(softLinkReg.sub(SOFT_LINKS_REL_DIR_MAP.get(dir), file_path_expired))
@@ -182,14 +184,14 @@ def update(filePath, roots, file_path_expired=None):
         logging.info('Scanning paths...')
         paths = set()
         for path in roots:
-            for js_path in treescan.ScanTree(path, fileConfig.fileSearchFilter):
+            for js_path in treescan.ScanTree(path, file_config.fileSearchFilter):
                 paths.add(js_path)
         logging.info('%s sources scanned.', len(paths))
 
         logging.info('Modifying version...')
         updatedFilePaths = set()
         for path in paths:
-            if updateVersionByPathsNew(path, fileConfig.regStrSet, filePaths, filePath):
+            if updateVersionByPathsNew(path, file_config.regStrSet, filePaths, file_path):
                 updatedFilePaths.add(path)
 
         if updatedFilePaths:
@@ -203,10 +205,10 @@ def update(filePath, roots, file_path_expired=None):
 
         return updatedFilePaths
     else:
-        return updateOld(filePath, roots)
+        return update_old(file_path, roots)
 
 
-def updateOld(filePath, roots):
+def update_old(filePath, roots):
     paths = set()
     updatedFilePaths = set()
 
@@ -226,7 +228,7 @@ def updateOld(filePath, roots):
             break
 
     timestamp = get_time_stamp_and_relative_path()[0]
-    logging.info("The new version : " + timestamp)
+    logging.info("The version : " + timestamp)
 
     logging.info('Scanning paths...')
     for path in roots:
@@ -251,15 +253,62 @@ def updateOld(filePath, roots):
     return updatedFilePaths
 
 
-def getRelPath(minJs, root):
-    return "/" + os.path.relpath(minJs, root).replace("\\", "/")
+def get_rel_path(min_js, root):
+    return "/" + os.path.relpath(min_js, root).replace("\\", "/")
+
+
+def get_build_version(entry_point_file, update_build_version):
+    if update_build_version:
+        timestamp, build_path = get_time_stamp_and_relative_path()
+        save_version_to_file(entry_point_file, timestamp)
+    else:
+        timestamp = get_version_from_file(entry_point_file)
+        if not timestamp:
+            timestamp, build_path = get_time_stamp_and_relative_path()
+            save_version_to_file(entry_point_file, timestamp)
+        else:
+            build_path = '/' + timestamp[:6]
+
+    return timestamp, build_path
+
+
+def save_version_to_file(entry_point_file, version):
+    svn.try_lock(entry_point_file)
+
+    file_io = open(entry_point_file, 'r')
+    content = file_io.read()
+    file_io.close()
+
+    re_compile = re.compile('([\s\S]*)//buildVersion=(.+)')
+    compile_match = re_compile.match(content)
+
+    version_str = '//buildVersion=' + version
+
+    if compile_match:
+        content = re_compile.sub(r'\1' + version_str, content)
+    else:
+        content = version_str + '\n' + content
+
+    file_io = open(entry_point_file, 'w')
+    file_io.write(content)
+    file_io.close()
+
+
+def get_version_from_file(entry_point_file):
+    file_io = open(entry_point_file, 'r')
+    content = file_io.read()
+    re_compile = re.compile('//buildVersion=(.+)')
+    compile_match = re_compile.match(content)
+    if compile_match:
+        return compile_match.group(1)
+    return None
 
 
 def main():
     options, args = _GetOptionsParser().parse_args()
     basePath = options.basePath
     roots = options.roots
-    filePath = getRelPath(options.filePath, basePath)
+    filePath = get_rel_path(options.filePath, basePath)
 
     update(filePath, roots)
 

@@ -29,23 +29,22 @@ usage: %prog [options] [file1.js file2.js ...]
 """
 import re
 import time
-
-from closure2amd import closure2amd
-import eos
-from legos import legos
-import version.updater
 import logging
 import optparse
 import os
 import sys
 import posixpath
 
+from closure2amd import closure2amd
+import eos
+from legos import legos
+import version.updater
 import depstree
 import jscompiler
 import source
 import treescan
-
 from util import svn, authUtil
+
 
 __author__ = 'nnaze@google.com (Nathan Naze)'
 
@@ -363,53 +362,6 @@ def genModuleJsEntryPoint(deps, input_namespaces, modulejs, output_dir, root_wit
     logging.info('Success.')
 
 
-def get_version_from_file(entry_point_file):
-    file_io = open(entry_point_file, 'r')
-    content = file_io.read()
-    re_compile = re.compile('//buildVersion=(.+)')
-    compile_match = re_compile.match(content)
-    if compile_match:
-        return compile_match.group(1)
-    return None
-
-
-def save_version_to_file(entry_point_file, version):
-    svn.try_lock(entry_point_file)
-
-    file_io = open(entry_point_file, 'r')
-    content = file_io.read()
-    file_io.close()
-
-    re_compile = re.compile('([\s\S]*)//buildVersion=(.+)')
-    compile_match = re_compile.match(content)
-
-    version_str = '//buildVersion=' + version
-
-    if compile_match:
-        content = re_compile.sub(r'\1' + version_str, content)
-    else:
-        content = version_str + '\n' + content
-
-    file_io = open(entry_point_file, 'w')
-    file_io.write(content)
-    file_io.close()
-
-
-def get_build_version(entry_point_file, update_build_version):
-    if update_build_version:
-        timestamp, build_path = version.updater.get_time_stamp_and_relative_path()
-        save_version_to_file(entry_point_file, timestamp)
-    else:
-        timestamp = get_version_from_file(entry_point_file)
-        if not timestamp:
-            timestamp, build_path = version.updater.get_time_stamp_and_relative_path()
-            save_version_to_file(entry_point_file, timestamp)
-        else:
-            build_path = '/' + timestamp[:6]
-
-    return timestamp, build_path
-
-
 def compile(compiler_jar_path, deps, inputs, compiler_flags, root, update_build_version=True):
     input = list(inputs)[0]
     # Make sure a .jar is specified.
@@ -431,7 +383,7 @@ def compile(compiler_jar_path, deps, inputs, compiler_flags, root, update_build_
 
         min_js = os.path.dirname(input) + "/" + file_name_no_suffix + ".c.min.js"
 
-        timestamp, build_path = get_build_version(input, update_build_version)
+        timestamp, build_path = version.updater.get_build_version(input, update_build_version)
         dir = root.replace("\\", "/") + version.updater.BASE_BUILD_DIR + build_path + "/"
         min_js_new = dir + file_name_no_suffix + "." + timestamp + ".c.min.js"
 
@@ -479,8 +431,8 @@ def compileSimple(compiler_jar_path, deps, inputs, compiler_flags, roots, exeEos
         out = open(minJs, "w")
         out.write(content)
 
-        minJsExpired = getRelPath(minJsExpired, roots[0])
-        htmlPaths = version.updater.update(getRelPath(minJs, roots[0]), roots, minJsExpired)
+        minJsExpired = version.updater.get_rel_path(minJsExpired, roots[0])
+        htmlPaths = version.updater.update(version.updater.get_rel_path(minJs, roots[0]), roots, minJsExpired)
         htmlRealPaths = []
 
         paths = [minJs]
@@ -517,10 +469,6 @@ def getEntryPointSourceMap(source_map):
         if isEntryPointModule(js_source.provides.copy().pop(), source_map_noGoog):
             source_map_entryPoint[path] = js_source
     return source_map_entryPoint
-
-
-def getRelPath(minJs, root):
-    return "/" + os.path.relpath(minJs, root).replace("\\", "/")
 
 
 def convertToLegos(dep):
@@ -605,8 +553,8 @@ def main():
                                          update_build_version=update_build_version)
 
         if min_js:
-            min_js_expired = getRelPath(min_js_expired, roots[0])
-            html_paths = version.updater.update(getRelPath(min_js, roots[0]), roots, min_js_expired)
+            min_js_expired = version.updater.get_rel_path(min_js_expired, roots[0])
+            html_paths = version.updater.update(version.updater.get_rel_path(min_js, roots[0]), roots, min_js_expired)
 
             paths = [min_js]
             for path in html_paths:
@@ -629,8 +577,8 @@ def main():
                                                  update_build_version=update_build_version)
 
                 if min_js:
-                    min_js_expired = getRelPath(min_js_expired, roots[0])
-                    html_paths = version.updater.update(getRelPath(min_js, roots[0]), roots, min_js_expired)
+                    min_js_expired = version.updater.get_rel_path(min_js_expired, roots[0])
+                    html_paths = version.updater.update(version.updater.get_rel_path(min_js, roots[0]), roots, min_js_expired)
 
                     paths.append(min_js)
                     for path in html_paths:
@@ -697,7 +645,7 @@ def main():
 def add_eos_mission(file_paths, subject, project_path, wait=True):
     rel_paths = []
     for path in file_paths:
-        rel_paths.append(getRelPath(path, project_path))
+        rel_paths.append(version.updater.get_rel_path(path, project_path))
 
     if wait:
         time.sleep(len(file_paths) * 5)

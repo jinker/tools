@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 from util import svn
+from util import command
 import distutils.version
 
 __author__ = 'jinkerjiang'
@@ -11,7 +12,7 @@ __author__ = 'jinkerjiang'
 _VERSION_REGEX = re.compile('"([0-9][.0-9]*)')
 
 logging.basicConfig(format=(sys.argv[0] + ': %(message)s'),
-    level=logging.INFO)
+                    level=logging.INFO)
 
 
 def _GetJavaVersion():
@@ -22,7 +23,7 @@ def _GetJavaVersion():
     return _VERSION_REGEX.search(version_line).group(1)
 
 
-def Compile(input, output=None, flags=None):
+def compile(input, output=None, flags=None):
     """Prepares command-line call to Closure Compiler.
 
     Args:
@@ -34,30 +35,22 @@ def Compile(input, output=None, flags=None):
 
     # User friendly version check.
     if not (distutils.version.LooseVersion(_GetJavaVersion()) >=
-            distutils.version.LooseVersion('1.6')):
+                distutils.version.LooseVersion('1.6')):
         logging.error('Requires Java 1.6 or higher. '
                       'Please visit http://www.java.com/getjava')
         return
 
-    if not output:
-        path_splitext = os.path.splitext(input)
-        output = path_splitext[0] + ".min" + path_splitext[1]
-
     svn.try_lock(output)
 
-    args = ['java', '-jar', os.path.dirname(__file__) + '/lib/yuicompressor-2.4.7.jar', input, '--charset', 'gb2312', '-o', output]
+    args = ['java', '-jar', os.path.dirname(__file__) + '/lib/yuicompressor-2.4.7.jar', input, '--line-break', '1000',
+            '--charset', 'gb2312']
+
+    if output:
+        args += ['-o', output]
 
     if flags:
         args += flags
 
-    logging.info('Compiling with the following command: %s', ' '.join(args))
+    command.run(' '.join(args), show_log=True)
 
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
-    stdoutdata, unused_stderrdata = proc.communicate()
-
-    logging.info('Compiling result: %s', output)
-
-    if proc.returncode != 0:
-        return
-
-    return stdoutdata
+    return output

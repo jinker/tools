@@ -71,6 +71,7 @@ def ScanTree(root, path_filter=None, ignore_hidden=True):
     """
 
     def OnError(os_error):
+        print root
         raise os_error
 
     for dirpath, dirnames, filenames in os.walk(root, onerror=OnError):
